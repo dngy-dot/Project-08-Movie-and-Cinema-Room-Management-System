@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<nav class="movies-page-breadcrumb small mb-3" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}" class="movies-bc-link">Trang chủ</a>
+  <span class="movies-bc-sep" aria-hidden="true">›</span>
+  <span>Phim</span>
+  <span class="movies-bc-sep" aria-hidden="true">›</span>
+  <span class="text-body">{{ page_title }}</span>
+</nav>
+
+<div class="movies-page-header d-flex flex-wrap justify-content-between align-items-end gap-3 mb-2">
+  <h1 class="movies-page-title mb-0">{{ page_title }}</h1>
+  {% if page_kind == 'now' %}
+  <a class="movies-page-alt" href="{{ url_for('movies_coming_soon') }}">Phim sắp chiếu</a>
+  {% else %}
+  <a class="movies-page-alt" href="{{ url_for('movies_now_showing') }}">Phim đang chiếu</a>
+  {% endif %}
+</div>
+<hr class="movies-page-rule mb-4">
+
+{% if movies %}
+<div class="row g-4 movies-grid-row">
+  {% for movie in movies %}
+  {% set g = movie.genre|default('', true)|lower %}
+  {% set rating_all = 'animation' in g or 'family' in g or 'hoạt hình' in g %}
+  {% set rating_t18 = ('kinh' in g or 'horror' in g or 'hồi hộp' in g) and not rating_all %}
+  <div class="col-6 col-lg-3">
+    <article class="movie-grid-card h-100">
+      <div class="movie-grid-card__poster-wrap">
+        {% if loop.index <= 3 %}
+        <span class="movie-rank-badge movie-rank-badge--{{ loop.index }}" aria-hidden="true">{{ loop.index }}</span>
+        {% endif %}
+        {% if rating_all %}
+        <span class="poster-rating poster-rating--all">P</span>
+        {% elif rating_t18 %}
+        <span class="poster-rating poster-rating--t18">T18</span>
+        {% else %}
+        <span class="poster-rating poster-rating--teen">T16</span>
+        {% endif %}
+        <a href="{{ url_for('movie_detail', movie_id=movie.id) }}" class="movie-grid-card__poster-link">
+          {% if movie.poster_url %}
+          <img class="movie-grid-card__poster-img" src="{{ movie.poster_url }}" alt="{{ movie.title }}" loading="lazy">
+          {% else %}
+          <div class="movie-grid-card__poster-fallback">{{ movie.title[0] }}</div>
+          {% endif %}
+        </a>
+      </div>
+      <div class="movie-grid-card__body">
+        <h2 class="movie-grid-card__title">
+          <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">{{ movie.title }}</a>
+        </h2>
+        <div class="movie-grid-card__meta">
+          <div><span class="movie-grid-card__label">Thể loại:</span> {{ movie.genre }}</div>
+          <div><span class="movie-grid-card__label">Thời lượng:</span> {{ movie.duration_minutes }} phút</div>
+          <div>
+            <span class="movie-grid-card__label">Khởi chiếu:</span>
+            {% if movie.id in first_screening_dates %}
+            {{ first_screening_dates[movie.id].strftime('%d-%m-%Y') }}
+            {% else %}
+            —
+            {% endif %}
+          </div>
+        </div>
+        <div class="movie-grid-card__cta">
+          <a class="btn btn-mua-ve" href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 6H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H4V8h16v8zM18 9h-5v6h5V9zm-1 1.5h-3v3h3v-3z"/></svg>
+            Mua vé
+          </a>
+        </div>
+      </div>
+    </article>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-box">Chưa có phim trong mục này.</div>
+{% endif %}
+{% endblock %}

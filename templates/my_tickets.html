@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-soft">
+<h2 class="soft-title">Vé của tôi</h2>
+{% if current_member %}
+  <p class="soft-subtitle">Vé của tài khoản: <strong>{{ current_member.phone }}</strong></p>
+  {% if spending_summary %}
+  <div class="alert alert-info">
+    Hạng hiện tại: <strong>{{ spending_summary.tier.label }}</strong> ·
+    Tổng chi tiêu: <strong>{{ "{:,.0f}".format(spending_summary.total_spent) }} đ</strong>
+  </div>
+  {% endif %}
+{% else %}
+  <p class="soft-subtitle">Nhập số điện thoại để tra cứu danh sách vé đã đặt.</p>
+{% endif %}
+
+{% if not current_member %}
+<form method="post" class="row g-2 mb-4 soft-form">
+  <div class="col-md-4">
+    <input class="form-control" name="phone" value="{{ phone }}" placeholder="Số điện thoại" required>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-primary w-100">Tra cứu</button>
+  </div>
+</form>
+{% endif %}
+
+{% if tickets %}
+<div class="table-responsive cgv-table-wrap">
+  <table class="table table-hover align-middle mb-0 admin-table">
+    <thead>
+      <tr>
+        <th>Mã vé</th>
+        <th>Phim</th>
+        <th>Ngày giờ</th>
+        <th>Phòng</th>
+        <th>Ghế</th>
+        <th>Đặt lúc</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tickets %}
+      <tr>
+        <td><strong>{{ t.booking_code }}</strong></td>
+        <td>{{ t.screening.movie.title }}</td>
+        <td>{{ t.screening.screening_date.strftime('%d-%m-%Y') }} {{ t.screening.screening_time.strftime('%H:%M') }}</td>
+        <td>{{ t.screening.room.room_name }}</td>
+        <td>{{ t.seat_number }}</td>
+        <td>{{ t.booked_at.strftime('%d-%m-%Y %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if invalidated_tickets %}
+<div class="alert alert-warning mt-4 mb-2">Các vé dưới đây không còn khả dụng do admin đã hủy suất/phim liên quan.</div>
+<div class="table-responsive cgv-table-wrap">
+  <table class="table table-hover align-middle mb-0 admin-table">
+    <thead>
+      <tr>
+        <th>Mã vé</th>
+        <th>Phim</th>
+        <th>Ngày giờ</th>
+        <th>Phòng</th>
+        <th>Ghế</th>
+        <th>Trạng thái</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in invalidated_tickets %}
+      <tr class="table-warning">
+        <td><strong>{{ t.booking_code }}</strong></td>
+        <td>{{ t.movie_title }}</td>
+        <td>{{ t.screening_date.strftime('%d-%m-%Y') }} {{ t.screening_time.strftime('%H:%M') }}</td>
+        <td>{{ t.room_name }}</td>
+        <td>{{ t.seat_number }}</td>
+        <td>{{ t.reason }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if phone and (not tickets) and (not invalidated_tickets) %}
+  {% if current_member %}
+    <div class="alert alert-warning">Tài khoản của bạn chưa có vé nào.</div>
+  {% else %}
+    <div class="alert alert-warning">Không tìm thấy vé nào với số điện thoại này.</div>
+  {% endif %}
+{% endif %}
+</div>
+{% endblock %}

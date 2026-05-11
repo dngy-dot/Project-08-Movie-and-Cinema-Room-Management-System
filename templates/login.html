@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-soft">
+  <h2 class="soft-title">Đăng nhập thành viên</h2>
+  <p class="soft-subtitle">Dùng số điện thoại đã đăng ký để đăng nhập.</p>
+
+  <form method="post" class="soft-form" style="max-width: 520px;">
+    <div class="mb-3">
+      <label class="form-label">Số điện thoại</label>
+      <input class="form-control" name="phone" value="{{ phone or '' }}" placeholder="VD: 0901234567" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Mật khẩu</label>
+      <input class="form-control" type="password" name="password" placeholder="Nhập mật khẩu" required>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-cgv-primary" type="submit">Đăng nhập</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('register') }}">Tạo tài khoản</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

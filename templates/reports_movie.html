@@ -1,0 +1,40 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div class="admin-header">
+  <div>
+    <p class="mb-1"><a href="{{ url_for('reports', q=search_q) if search_q else url_for('reports') }}" class="text-decoration-none">← Quay lại báo cáo theo phim</a></p>
+    <h2 class="soft-title">Doanh thu theo rạp — {{ movie.title }}</h2>
+    <div class="admin-muted">Tổng hợp vé đã bán cho phim này tại từng rạp.</div>
+  </div>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md-4"><div class="card p-3"><strong>Giá vé mặc định:</strong> {{ "{:,.0f}".format(ticket_price) }} VND</div></div>
+  <div class="col-md-4"><div class="card p-3"><strong>Tổng vé (phim này):</strong> {{ total_tickets }}</div></div>
+  <div class="col-md-4"><div class="card p-3"><strong>Tổng doanh thu:</strong> {{ "{:,.0f}".format(total_revenue) }} VND</div></div>
+</div>
+
+<div class="table-responsive cgv-table-wrap">
+  <table class="table table-hover align-middle mb-0 admin-table">
+    <thead>
+      <tr>
+        <th>Rạp</th>
+        <th class="text-end">Vé đã bán</th>
+        <th class="text-end">Doanh thu</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in cinema_rows %}
+        {% set rev = (r.revenue or 0)|int %}
+        <tr>
+          <td>{{ r.cinema_name }}</td>
+          <td class="text-end">{{ r.sold }}</td>
+          <td class="text-end">{{ "{:,.0f}".format(rev) }} VND</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3" class="text-center py-4">Chưa có suất chiếu hoặc vé cho phim này.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

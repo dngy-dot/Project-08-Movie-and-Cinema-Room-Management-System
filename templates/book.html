@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-soft booking-page">
+  {% set booking_step = 3 %}
+  {% set movie_id = screening.movie_id %}
+  {% set booking_date = screening.screening_date %}
+  {% set screening_id = screening.id %}
+  {% include "_booking_steps.html" %}
+
+  <div class="booking-page-head mb-4">
+    <div>
+      <h2 class="soft-title mb-1">{{ screening.movie.title }}</h2>
+      <p class="booking-meta text-muted mb-0">
+        {{ screening.movie.genre }} · {{ screening.movie.duration_minutes }} phút
+      </p>
+    </div>
+    <div class="booking-showtime-pill">
+      <span class="booking-showtime-pill__day">{{ screening.screening_date.strftime('%d/%m') }}</span>
+      <span class="booking-showtime-pill__time">{{ screening.screening_time.strftime('%H:%M') }}</span>
+      <span class="booking-showtime-pill__room">{{ screening.room.cinema.cinema_name }}</span>
+      <span class="booking-showtime-pill__room">{{ screening.room.room_name }}</span>
+    </div>
+  </div>
+
+  <div class="row g-4 align-items-start">
+    <div class="col-lg-8">
+      <div class="seat-map-card">
+        <div class="seat-map-card__head">
+          <h3 class="seat-map-card__title">Sơ đồ phòng chiếu</h3>
+          <div class="seat-legend" role="list">
+            <span class="seat-legend__item" role="listitem"><span class="seat-dot seat-dot--free"></span> Trống</span>
+            <span class="seat-legend__item" role="listitem"><span class="seat-dot seat-dot--picked"></span> Đang chọn</span>
+            <span class="seat-legend__item" role="listitem"><span class="seat-dot seat-dot--taken"></span> Đã đặt</span>
+          </div>
+        </div>
+        <div class="cinema-screen" aria-hidden="true">MÀN HÌNH</div>
+        <div class="seat-rows">
+          {% for row_seats in seats|batch(10) %}
+            <div class="seat-row" role="group" aria-label="Hàng {{ row_seats[0][0] }}">
+              <span class="seat-row__label">{{ row_seats[0][0] }}</span>
+              <div class="seat-row__cells">
+                {% for seat in row_seats %}
+                  {% if seat in occupied_seats %}
+                    <button type="button" class="seat-tile seat-tile--booked" disabled aria-label="Ghế {{ seat }} đã đặt">{{ seat }}</button>
+                  {% else %}
+                    <button type="button" class="seat-tile seat-tile--free js-seat" data-seat="{{ seat }}" aria-pressed="false" aria-label="Ghế {{ seat }}">{{ seat }}</button>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="booking-side-card">
+        <h3 class="booking-side-card__title">Thông tin &amp; thanh toán</h3>
+        <p class="booking-side-card__hint small text-muted">Chọn ghế trên sơ đồ rồi tiếp tục thanh toán bằng thông tin tài khoản thành viên.</p>
+        <form id="book_form" method="post" action="{{ url_for('checkout', screening_id=screening.id) }}" class="booking-side-form">
+          <label class="form-label small fw-semibold mb-1">Họ tên</label>
+          <input class="form-control mb-3" name="customer_name" value="{{ member_name or '' }}" required autocomplete="name" readonly>
+          <label class="form-label small fw-semibold mb-1">Số điện thoại</label>
+          <input class="form-control mb-2" name="customer_phone" value="{{ member_phone or '' }}" required autocomplete="tel" readonly>
+          <p class="small text-muted mb-3">Thông tin được lấy từ tài khoản đã đăng nhập.</p>
+          <input type="hidden" name="seat_number" id="seat_number_input" value="">
+          <div class="booking-summary-panel">
+            <div class="booking-summary-panel__row">
+              <span>Ghế đã chọn</span>
+              <span class="booking-summary-panel__seats" id="seat_chips"></span>
+            </div>
+            <div class="booking-summary-panel__row">
+              <span>Số vé</span>
+              <strong id="selected_count">0</strong>
+            </div>
+            <div class="booking-summary-panel__row">
+              <span>Đơn giá</span>
+              <span>{{ "{:,.0f}".format(ticket_price) }} đ</span>
+            </div>
+            <div class="booking-summary-panel__row booking-summary-panel__row--total">
+              <span>Tạm tính</span>
+              <strong id="selected_total">0 đ</strong>
+            </div>
+          </div>
+          <p class="small text-danger d-none mb-2" id="seat_error">Vui lòng chọn ít nhất một ghế.</p>
+          <button type="submit" class="btn btn-booking-submit w-100">Tiếp tục thanh toán</button>
+          <a class="btn btn-outline-secondary w-100 mt-2" href="{{ url_for('movie_detail', movie_id=screening.movie_id, date=screening.screening_date.strftime('%Y-%m-%d')) }}#suat">Đổi suất chiếu</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  (function () {
+    const seatButtons = document.querySelectorAll(".js-seat");
+    const seatInput = document.getElementById("seat_number_input");
+    const selectedCount = document.getElementById("selected_count");
+    const selectedTotal = document.getElementById("selected_total");
+    const seatChips = document.getElementById("seat_chips");
+    const form = document.getElementById("book_form");
+    const seatError = document.getElementById("seat_error");
+    const ticketPrice = Number("{{ ticket_price }}");
+    const selectedSeats = new Set();
+
+    function formatMoney(value) {
+      return value.toLocaleString("vi-VN") + " đ";
+    }
+
+    function renderChips(seats) {
+      seatChips.innerHTML = "";
+      seats.forEach((s) => {
+        const span = document.createElement("span");
+        span.className = "seat-chip";
+        span.textContent = s;
+        seatChips.appendChild(span);
+      });
+    }
+
+    function syncState() {
+      const seats = Array.from(selectedSeats).sort();
+      seatInput.value = seats.join(",");
+      selectedCount.textContent = String(seats.length);
+      selectedTotal.textContent = formatMoney(ticketPrice * seats.length);
+      renderChips(seats);
+    }
+
+    seatButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const seat = btn.dataset.seat;
+        if (selectedSeats.has(seat)) {
+          selectedSeats.delete(seat);
+          btn.classList.remove("seat-tile--selected");
+          btn.setAttribute("aria-pressed", "false");
+        } else {
+          selectedSeats.add(seat);
+          btn.classList.add("seat-tile--selected");
+          btn.setAttribute("aria-pressed", "true");
+        }
+        syncState();
+        seatError.classList.add("d-none");
+      });
+    });
+
+    form.addEventListener("submit", (e) => {
+      if (selectedSeats.size === 0) {
+        e.preventDefault();
+        seatError.classList.remove("d-none");
+      }
+    });
+  })();
+</script>
+{% endblock %}

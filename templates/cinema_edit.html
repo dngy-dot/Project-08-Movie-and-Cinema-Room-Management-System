@@ -1,0 +1,16 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h2 class="soft-title">Sửa rạp phim</h2>
+<form method="post" class="row g-2 mb-3 soft-form">
+  <div class="col-md-4">
+    <input class="form-control" name="cinema_name" value="{{ cinema.cinema_name }}" required>
+  </div>
+  <div class="col-md-6">
+    <input class="form-control" name="address" value="{{ cinema.address or '' }}" placeholder="Địa chỉ">
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-success w-100">Luu</button>
+  </div>
+</form>
+<a class="btn btn-secondary btn-sm" href="{{ url_for('cinemas') }}">Quay lại</a>
+{% endblock %}

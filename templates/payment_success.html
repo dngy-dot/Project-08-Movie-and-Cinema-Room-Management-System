@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-soft">
+<div class="alert alert-success">
+  Thanh toán thành công! Vé của bạn đã được đặt.
+</div>
+<div class="card p-3">
+  <div><strong>Phim:</strong> {{ screening.movie.title }}</div>
+  <div><strong>Suất:</strong> {{ screening.screening_date.strftime('%d-%m-%Y') }} {{ screening.screening_time.strftime('%H:%M') }}</div>
+  <div><strong>Phòng:</strong> {{ screening.room.room_name }}</div>
+  <div><strong>Mã đơn:</strong> {{ order_code }}</div>
+  <div><strong>Ghế:</strong> {{ selected_seats | join(', ') }}</div>
+  <div><strong>Khách hàng:</strong> {{ customer_name }} - {{ customer_phone }}</div>
+  <div><strong>Mã vé:</strong> {{ booking_codes | join(', ') }}</div>
+  <div><strong>Phương thức thanh toán:</strong> {{ payment_method }}</div>
+  <div><strong>Số tiền:</strong> {{ "{:,.0f}".format(total_amount) }} VND</div>
+</div>
+<div class="mt-3 d-flex gap-2">
+  <a class="btn btn-primary" href="{{ url_for('index') }}">Về trang chủ</a>
+  <a class="btn btn-success" href="{{ url_for('my_tickets') }}">Xem vé của tôi</a>
+  <a class="btn btn-outline-secondary" href="{{ url_for('movie_detail', movie_id=screening.movie_id) }}">Đặt suất khác</a>
+</div>
+</div>
+{% endblock %}

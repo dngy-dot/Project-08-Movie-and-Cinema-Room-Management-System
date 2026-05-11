@@ -1,0 +1,59 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div class="admin-header">
+  <div>
+    <h2 class="soft-title">Báo cáo doanh thu theo phim</h2>
+    <div class="admin-muted">Chọn một phim để xem doanh thu theo từng rạp.</div>
+  </div>
+</div>
+
+<form class="row g-2 align-items-center mb-4" method="get" action="{{ url_for('reports') }}" role="search">
+  <div class="col-md-8 col-lg-6">
+    <label class="visually-hidden" for="report-movie-search">Tìm phim</label>
+    <div class="input-group">
+      <span class="input-group-text">Tìm phim</span>
+      <input id="report-movie-search" class="form-control" type="search" name="q" value="{{ search_q or '' }}" placeholder="Nhập tên phim..." autocomplete="off">
+      <button class="btn btn-outline-secondary" type="submit">Tìm</button>
+    </div>
+  </div>
+  {% if search_q %}
+  <div class="col-auto">
+    <a class="btn btn-link px-0" href="{{ url_for('reports') }}">Xóa bộ lọc</a>
+  </div>
+  {% endif %}
+</form>
+
+<div class="row mb-3">
+  <div class="col-md-4"><div class="card p-3"><strong>Giá vé mặc định:</strong> {{ "{:,.0f}".format(ticket_price) }} VND</div></div>
+  <div class="col-md-4"><div class="card p-3"><strong>Tổng vé (danh sách hiện tại):</strong> {{ total_tickets }}</div></div>
+  <div class="col-md-4"><div class="card p-3"><strong>Tổng doanh thu:</strong> {{ "{:,.0f}".format(total_revenue) }} VND</div></div>
+</div>
+
+<div class="table-responsive cgv-table-wrap">
+  <table class="table table-hover align-middle mb-0 admin-table">
+    <thead>
+      <tr>
+        <th>Phim</th>
+        <th class="text-end">Vé đã bán</th>
+        <th class="text-end">Doanh thu</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in movie_rows %}
+        {% set rev = (r.revenue or 0)|int %}
+        <tr class="reports-movie-row">
+          <td>
+            <a href="{{ url_for('reports_movie', movie_id=r.id) }}{% if search_q %}?q={{ search_q|urlencode }}{% endif %}" class="fw-semibold text-decoration-none">
+              {{ r.title }}
+            </a>
+          </td>
+          <td class="text-end">{{ r.sold }}</td>
+          <td class="text-end">{{ "{:,.0f}".format(rev) }} VND</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3" class="text-center py-4">Chưa có dữ liệu{% if search_q %} khớp “{{ search_q }}”{% endif %}.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

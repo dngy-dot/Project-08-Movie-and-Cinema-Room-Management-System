@@ -1,0 +1,79 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div class="admin-header">
+  <div>
+    <h2 class="soft-title">Cấu hình thanh toán tự động</h2>
+    <div class="admin-muted">Nhập thông tin VietQR và SePay để hệ thống tự xác nhận thanh toán.</div>
+  </div>
+</div>
+
+<form method="post" class="row g-3 soft-form">
+  <div class="col-12">
+    <h5 class="mb-1">Giá vé</h5>
+    <div class="admin-muted">Giá vé mặc định áp dụng cho toàn bộ luồng đặt vé và báo cáo.</div>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Giá vé mặc định (VND)</label>
+    <input class="form-control" type="number" min="1000" step="1000" name="default_ticket_price" value="{{ config.default_ticket_price }}">
+  </div>
+
+  <div class="col-12">
+    <h5 class="mb-1">VietQR</h5>
+    <div class="admin-muted">Dùng để sinh mã QR ngân hàng thật (có thể nhập SWIFT hoặc BIN).</div>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Mã SWIFT ngân hàng</label>
+    <input class="form-control" name="vietqr_bank_code" value="{{ config.vietqr_bank_code }}" placeholder="VD: ICBVVNVX">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Số tài khoản nhận tiền</label>
+    <input class="form-control" name="vietqr_account_number" value="{{ config.vietqr_account_number }}" placeholder="VD: 123456789">
+  </div>
+  <div class="col-md-5">
+    <label class="form-label">Tên chủ tài khoản</label>
+    <input class="form-control" name="vietqr_account_name" value="{{ config.vietqr_account_name }}" placeholder="VD: NGUYEN VAN A">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Template VietQR</label>
+    <input class="form-control" name="vietqr_template" value="{{ config.vietqr_template }}" placeholder="compact2">
+  </div>
+
+  <div class="col-12 mt-2">
+    <h5 class="mb-1">SePay (tự động đối soát)</h5>
+    <div class="admin-muted">Nếu để trống API key thì vẫn quét QR được nhưng phải bấm xác nhận thủ công.</div>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">SePay API Key</label>
+    <input class="form-control" name="sepay_api_key" value="{{ config.sepay_api_key }}" placeholder="Nhập API key">
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">SePay API URL</label>
+    <input class="form-control" name="sepay_api_url" value="{{ config.sepay_api_url }}">
+  </div>
+  <div class="col-12">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" id="sepay_fallback_match" name="sepay_fallback_match" {% if config.sepay_fallback_match %}checked{% endif %}>
+      <label class="form-check-label" for="sepay_fallback_match">
+        Cho phép đối soát fallback theo số tiền + thời điểm (khi nội dung chuyển khoản không có mã đơn)
+      </label>
+    </div>
+    <div class="admin-muted mt-1">Chỉ bật khi bạn dùng QR nội dung cố định như SEVQR. Hệ thống chỉ xác nhận fallback khi số tiền là duy nhất trong các đơn chờ gần đây.</div>
+  </div>
+
+  <div class="col-12">
+    <button class="btn btn-success">Lưu cấu hình</button>
+  </div>
+</form>
+
+<form method="post" action="{{ url_for('test_sepay') }}" class="row g-2 soft-form mt-3">
+  <div class="col-12">
+    <h6 class="mb-1">Kiểm tra nhanh SePay</h6>
+    <div class="admin-muted">Bấm để kiểm tra API Key và API URL hiện tại có gọi được SePay không.</div>
+  </div>
+  <input type="hidden" name="sepay_api_key" value="{{ config.sepay_api_key }}">
+  <input type="hidden" name="sepay_api_url" value="{{ config.sepay_api_url }}">
+  <div class="col-md-3">
+    <button class="btn btn-outline-primary w-100">Test SePay</button>
+  </div>
+</form>
+{% endblock %}

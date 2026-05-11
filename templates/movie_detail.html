@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-soft booking-page">
+  {% set booking_step = 2 %}
+  {% set movie_id = movie.id %}
+  {% set booking_date = selected_date %}
+  {% set screening_id = none %}
+  {% include "_booking_steps.html" %}
+
+  <div class="booking-page-head mb-4">
+    <div>
+      <h2 class="soft-title mb-1">{{ movie.title }}</h2>
+      <div class="soft-subtitle">{{ movie.genre }} | {{ movie.duration_minutes }} phút</div>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="{{ url_for('index') }}">← Quay lại</a>
+  </div>
+
+  <section class="mb-4" aria-labelledby="pick-date-heading">
+    <h3 id="pick-date-heading" class="booking-section-title">Chọn ngày xem</h3>
+    <div class="date-chip-row" role="list">
+      {% for d in available_dates %}
+        <a role="listitem" class="date-chip {% if selected_date == d %}date-chip--active{% endif %}"
+           href="{{ url_for('movie_detail', movie_id=movie.id, date=d.strftime('%Y-%m-%d'), cinema_id=selected_cinema_id) }}">
+          <span class="date-chip__dow">
+            {% set wd = d.weekday() %}
+            {% if wd == 6 %}CN{% elif wd == 0 %}T2{% elif wd == 1 %}T3{% elif wd == 2 %}T4{% elif wd == 3 %}T5{% elif wd == 4 %}T6{% else %}T7{% endif %}
+          </span>
+          <span class="date-chip__num">{{ d.strftime('%d') }}</span>
+          <span class="date-chip__mon">{{ d.strftime('%m') }}/{{ d.year }}</span>
+        </a>
+      {% else %}
+        <p class="text-muted mb-0">Chưa có lịch chiếu cho phim này.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="mb-4" aria-labelledby="pick-cinema-heading">
+    <h3 id="pick-cinema-heading" class="booking-section-title">Chọn rạp chiếu</h3>
+    <div class="date-chip-row" role="list">
+      {% for cinema in available_cinemas %}
+        <a
+          role="listitem"
+          class="date-chip {% if selected_cinema_id == cinema.id %}date-chip--active{% endif %}"
+          href="{{ url_for('movie_detail', movie_id=movie.id, date=selected_date.strftime('%Y-%m-%d') if selected_date else none, cinema_id=cinema.id) }}#suat"
+        >
+          <span class="date-chip__dow">Rạp</span>
+          <span class="date-chip__num">{{ cinema.cinema_name[:2] | upper }}</span>
+          <span class="date-chip__mon">{{ cinema.cinema_name }}</span>
+        </a>
+      {% else %}
+        <p class="text-muted mb-0">Không có rạp khả dụng cho ngày đã chọn.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section id="suat" class="mb-2" aria-labelledby="pick-show-heading">
+    <h3 id="pick-show-heading" class="booking-section-title">Chọn suất chiếu</h3>
+    <div class="row g-3">
+      {% for sc in screenings %}
+        <div class="col-sm-6 col-xl-4">
+          <article class="showtime-card h-100">
+            <div class="showtime-card__time">{{ sc.screening_time.strftime('%H:%M') }}</div>
+            <div class="showtime-card__meta">
+              <span class="showtime-chip">{{ sc.room.cinema.cinema_name }}</span>
+              <span class="showtime-chip">{{ sc.room.room_name }}</span>
+              {% if selected_date %}
+                <span class="showtime-chip showtime-chip--muted">{{ selected_date.strftime('%d/%m/%Y') }}</span>
+              {% endif %}
+            </div>
+            <a class="btn showtime-card__cta" href="{{ url_for('book_ticket', screening_id=sc.id) }}">Chọn ghế</a>
+          </article>
+        </div>
+      {% else %}
+        <div class="col-12">
+          <div class="empty-showtimes">Không có suất chiếu cho ngày đã chọn.</div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

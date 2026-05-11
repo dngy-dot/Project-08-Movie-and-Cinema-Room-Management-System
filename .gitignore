@@ -1,0 +1,21 @@
+# Virtual env — không commit/copy sang máy khác; tạo lại: python -m venv .venv
+.venv/
+venv/
+env/
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Môi trường / IDE
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini

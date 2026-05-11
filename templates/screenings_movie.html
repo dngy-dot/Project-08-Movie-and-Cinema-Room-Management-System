@@ -1,0 +1,83 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div class="admin-header">
+  <div>
+    <h2 class="soft-title mb-1">Suất chiếu — {{ movie.title }}</h2>
+    <div class="admin-muted">Quản lý suất chiếu của phim theo từng rạp.</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('screenings') }}">← Danh sách phim</a>
+  </div>
+</div>
+
+<form method="post" class="row g-2 mb-4 soft-form">
+  <div class="col-md-3">
+    <select class="form-select" name="cinema_id" id="cinema_select" required>
+      <option value="">Chọn rạp</option>
+      {% for c in cinemas %}<option value="{{ c.id }}">{{ c.cinema_name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select class="form-select" name="room_id" id="room_select" required>
+      <option value="">Chọn phòng</option>
+      {% for r in rooms %}<option value="{{ r.id }}" data-cinema-id="{{ r.cinema_id }}">{{ r.room_name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2"><input class="form-control" type="date" name="screening_date" required></div>
+  <div class="col-md-2"><input class="form-control" type="time" name="screening_time" required></div>
+  <div class="col-md-2"><button class="btn btn-success w-100">Thêm suất chiếu</button></div>
+</form>
+
+{% for cinema_name, cinema_screenings in screenings_by_cinema.items() %}
+<div class="mb-3">
+  <h5 class="mb-2">{{ cinema_name }}</h5>
+  <div class="table-responsive cgv-table-wrap">
+    <table class="table table-hover align-middle mb-0 admin-table">
+      <thead><tr><th>ID</th><th>Phòng</th><th>Ngày</th><th>Giờ</th><th>Thao tác</th></tr></thead>
+      <tbody>
+        {% for s in cinema_screenings %}
+        <tr>
+          <td>{{ s.id }}</td>
+          <td>{{ s.room.room_name }}</td>
+          <td>{{ s.screening_date.strftime('%d-%m-%Y') }}</td>
+          <td>{{ s.screening_time.strftime('%H:%M') }}</td>
+          <td class="d-flex gap-2">
+            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('book_ticket', screening_id=s.id) }}">Đặt vé</a>
+            <a class="btn btn-outline-warning btn-sm" href="{{ url_for('edit_screening', screening_id=s.id) }}">Sửa</a>
+            <form method="post" action="{{ url_for('delete_screening', screening_id=s.id) }}" onsubmit="return confirm('Bạn có chắc muốn xóa suất chiếu này?');">
+              <button class="btn btn-outline-danger btn-sm">Xóa</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-box">Phim này chưa có suất chiếu.</div>
+{% endfor %}
+
+<script>
+  (function () {
+    const cinemaSelect = document.getElementById("cinema_select");
+    const roomSelect = document.getElementById("room_select");
+    if (!cinemaSelect || !roomSelect) return;
+    const roomOptions = Array.from(roomSelect.querySelectorAll("option[data-cinema-id]"));
+
+    function syncRooms() {
+      const cinemaId = cinemaSelect.value;
+      roomOptions.forEach((option) => {
+        option.hidden = !!cinemaId && option.dataset.cinemaId !== cinemaId;
+      });
+      if (roomSelect.selectedOptions.length && roomSelect.selectedOptions[0].hidden) {
+        roomSelect.value = "";
+      }
+    }
+
+    cinemaSelect.addEventListener("change", syncRooms);
+    syncRooms();
+  })();
+</script>
+{% endblock %}
+

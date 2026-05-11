@@ -1,0 +1,33 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div class="admin-header">
+  <div>
+    <h2 class="soft-title">Quản lý suất chiếu</h2>
+    <div class="admin-muted">Chọn phim để vào trang quản lý suất chiếu theo từng rạp.</div>
+  </div>
+</div>
+
+<div class="row g-3">
+  {% for m in movies %}
+  <div class="col-6 col-md-4 col-lg-3">
+    <a class="movie-grid-card h-100 text-decoration-none" href="{{ url_for('screenings_movie', movie_id=m.id) }}">
+      <div class="movie-grid-card__poster-wrap">
+        {% if m.poster_url %}
+        <img class="movie-grid-card__poster-img" src="{{ m.poster_url }}" alt="{{ m.title }}" loading="lazy">
+        {% else %}
+        <div class="movie-grid-card__poster-fallback">{{ m.title[0] }}</div>
+        {% endif %}
+      </div>
+      <div class="movie-grid-card__body">
+        <h3 class="movie-grid-card__title mb-0">{{ m.title }}</h3>
+        <div class="small text-muted mt-1">{{ m.genre }}</div>
+      </div>
+    </a>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="empty-box">Chưa có phim để quản lý suất chiếu.</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

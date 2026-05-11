@@ -1,0 +1,91 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div class="admin-header">
+  <div>
+    <h2 class="soft-title">Quản lý khách hàng</h2>
+    <div class="admin-muted">Xem danh sách khách hàng, tài khoản thành viên, chi tiêu và hạng thành viên.</div>
+  </div>
+</div>
+<form method="post" class="row g-2 mb-4 soft-form">
+  <div class="col-md-5"><input class="form-control" name="name" placeholder="Họ tên" required></div>
+  <div class="col-md-5"><input class="form-control" name="phone" placeholder="Số điện thoại" required></div>
+  <div class="col-md-2"><button class="btn btn-success w-100">Thêm</button></div>
+</form>
+<div class="table-responsive cgv-table-wrap">
+  <table class="table table-hover align-middle mb-0 admin-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Tên khách hàng</th>
+        <th>Số điện thoại</th>
+        <th>Tài khoản thành viên</th>
+        <th>Đã chi tiêu</th>
+        <th>Hạng</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in customers %}
+      {% set c = row.customer %}
+      <tr>
+        <td>{{ c.id }}</td>
+        <td>{{ c.name }}</td>
+        <td>{{ c.phone }}</td>
+        <td>
+          {% if row.member_name %}
+            {{ row.member_name }}
+          {% else %}
+            <span class="text-muted">Chưa đăng ký</span>
+          {% endif %}
+        </td>
+        <td>{{ "{:,.0f}".format(row.total_spent) }} đ</td>
+        <td><span class="badge bg-info text-dark">{{ row.tier.label }}</span></td>
+        <td class="d-flex gap-2">
+          <a class="btn btn-outline-warning btn-sm" href="{{ url_for('edit_customer', customer_id=c.id) }}">Sửa</a>
+          <form method="post" action="{{ url_for('delete_customer', customer_id=c.id) }}" onsubmit="return confirm('Bạn có chắc muốn xóa khách hàng này?');">
+            <button class="btn btn-outline-danger btn-sm">Xóa</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center">Chưa có khách hàng.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="admin-header mt-4">
+  <div>
+    <h3 class="soft-title h4 mb-1">Tài khoản đã đăng ký</h3>
+    <div class="admin-muted">Danh sách người dùng đã tạo nick thành viên.</div>
+  </div>
+</div>
+<div class="table-responsive cgv-table-wrap">
+  <table class="table table-hover align-middle mb-0 admin-table">
+    <thead>
+      <tr>
+        <th>ID Member</th>
+        <th>Họ tên</th>
+        <th>Số điện thoại</th>
+        <th>Ngày đăng ký</th>
+        <th>Tổng chi tiêu</th>
+        <th>Hạng thành viên</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in member_rows %}
+      <tr>
+        <td>{{ row.member.id }}</td>
+        <td>{{ row.member.name }}</td>
+        <td>{{ row.member.phone }}</td>
+        <td>{{ row.member.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+        <td>{{ "{:,.0f}".format(row.total_spent) }} đ</td>
+        <td><span class="badge bg-primary">{{ row.tier.label }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center">Chưa có tài khoản thành viên nào.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

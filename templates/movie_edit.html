@@ -1,0 +1,28 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h2 class="soft-title">Sửa phim</h2>
+<form method="post" class="row g-2 mb-3 soft-form">
+  <div class="col-md-4">
+    <input class="form-control" name="title" value="{{ movie.title }}" required>
+  </div>
+  <div class="col-md-2">
+    <input class="form-control" name="genre" value="{{ movie.genre }}" required>
+  </div>
+  <div class="col-md-2">
+    <input class="form-control" type="number" min="1" name="duration_minutes" value="{{ movie.duration_minutes }}" required>
+  </div>
+  <div class="col-md-2">
+    <select class="form-select" name="release_status">
+      <option value="now_showing" {% if movie.release_status == "now_showing" %}selected{% endif %}>Dang chieu</option>
+      <option value="coming_soon" {% if movie.release_status == "coming_soon" %}selected{% endif %}>Sap chieu</option>
+    </select>
+  </div>
+  <div class="col-md-2 d-flex gap-2">
+    <button class="btn btn-success w-100">Luu</button>
+  </div>
+  <div class="col-md-12">
+    <input class="form-control" name="poster_url" value="{{ movie.poster_url or '' }}" placeholder="Poster URL (https://...)">
+  </div>
+</form>
+<a class="btn btn-secondary btn-sm" href="{{ url_for('movies') }}">Quay lại</a>
+{% endblock %}

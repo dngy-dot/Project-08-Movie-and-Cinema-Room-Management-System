@@ -1,0 +1,23 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h2 class="soft-title">Sửa phòng chiếu</h2>
+<form method="post" class="row g-2 mb-3 soft-form">
+  <div class="col-md-3">
+    <select class="form-select" name="cinema_id" required>
+      {% for c in cinemas %}
+      <option value="{{ c.id }}" {% if c.id == room.cinema_id %}selected{% endif %}>{{ c.cinema_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <input class="form-control" name="room_name" value="{{ room.room_name }}" required>
+  </div>
+  <div class="col-md-3">
+    <input class="form-control" type="number" min="1" name="capacity" value="{{ room.capacity }}" required>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-success w-100">Luu</button>
+  </div>
+</form>
+<a class="btn btn-secondary btn-sm" href="{{ url_for('rooms') }}">Quay lại</a>
+{% endblock %}

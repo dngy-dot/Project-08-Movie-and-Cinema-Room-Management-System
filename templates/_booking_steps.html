@@ -1,0 +1,27 @@
+{# booking_step: 1-4, movie_id, booking_date (date|none), screening_id (int|none) #}
+{% set d = booking_date.strftime('%Y-%m-%d') if booking_date else none %}
+{% set movie_day_url = url_for('movie_detail', movie_id=movie_id, date=d) if d else url_for('movie_detail', movie_id=movie_id) %}
+<nav class="booking-steps mb-4" aria-label="Tiến trình đặt vé">
+  <ol class="booking-steps__list">
+    <li class="booking-steps__item {% if booking_step > 1 %}booking-steps__item--done{% elif booking_step == 1 %}booking-steps__item--current{% endif %}">
+      {% if booking_step > 1 and d %}<a class="booking-steps__link" href="{{ movie_day_url }}">Ngày xem</a>
+      {% elif booking_step > 1 %}<a class="booking-steps__link" href="{{ url_for('movie_detail', movie_id=movie_id) }}">Ngày xem</a>
+      {% else %}<span class="booking-steps__text">Ngày xem</span>{% endif %}
+    </li>
+    <li class="booking-steps__sep" aria-hidden="true"></li>
+    <li class="booking-steps__item {% if booking_step == 2 %}booking-steps__item--current{% elif booking_step > 2 %}booking-steps__item--done{% endif %}">
+      {% if booking_step > 2 and d %}<a class="booking-steps__link" href="{{ movie_day_url }}#suat">Suất chiếu</a>
+      {% elif booking_step == 2 and d %}<a class="booking-steps__link" href="#suat">Suất chiếu</a>
+      {% else %}<span class="booking-steps__text">Suất chiếu</span>{% endif %}
+    </li>
+    <li class="booking-steps__sep" aria-hidden="true"></li>
+    <li class="booking-steps__item {% if booking_step == 3 %}booking-steps__item--current{% elif booking_step > 3 %}booking-steps__item--done{% endif %}">
+      {% if screening_id and booking_step != 3 %}<a class="booking-steps__link" href="{{ url_for('book_ticket', screening_id=screening_id) }}">Chọn ghế</a>
+      {% else %}<span class="booking-steps__text">Chọn ghế</span>{% endif %}
+    </li>
+    <li class="booking-steps__sep" aria-hidden="true"></li>
+    <li class="booking-steps__item {% if booking_step == 4 %}booking-steps__item--current{% endif %}">
+      <span class="booking-steps__text">Thanh toán</span>
+    </li>
+  </ol>
+</nav>

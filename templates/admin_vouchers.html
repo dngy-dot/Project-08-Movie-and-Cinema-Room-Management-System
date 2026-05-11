@@ -1,0 +1,47 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h2 class="soft-title">Quản lý Voucher</h2>
+<p class="text-muted">Nhập % giảm giá, hệ thống tự tạo mã random. Mã có hiệu lực tới khi bạn xóa.</p>
+
+<form method="post" class="row g-2 mb-4 soft-form">
+  <div class="col-md-4">
+    <input type="number" min="1" max="100" class="form-control" name="discount_percent" placeholder="Phần trăm giảm giá (1-100)" required>
+  </div>
+  <div class="col-md-3">
+    <button class="btn btn-success w-100">Tạo voucher random</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Mã voucher</th>
+        <th>Giảm giá</th>
+        <th>Lượt đã dùng</th>
+        <th>Ngày tạo</th>
+        <th class="text-end">Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in vouchers %}
+      <tr>
+        <td><strong>{{ item.code }}</strong></td>
+        <td>{{ item.discount_percent }}%</td>
+        <td>{{ usage_counts.get(item.id, 0) }}</td>
+        <td>{{ item.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+        <td class="text-end">
+          <form method="post" action="{{ url_for('delete_voucher', voucher_id=item.id) }}" class="d-inline">
+            <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Xóa voucher này?')">Xóa</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="5" class="text-center text-muted">Chưa có voucher nào.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

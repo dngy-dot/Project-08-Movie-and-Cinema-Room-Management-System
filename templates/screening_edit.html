@@ -1,0 +1,58 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h2 class="soft-title">Sửa suất chiếu</h2>
+<form method="post" class="row g-2 mb-3 soft-form">
+  <div class="col-md-2">
+    <select class="form-select" id="cinema_select" name="cinema_id" required>
+      {% for c in cinemas %}
+      <option value="{{ c.id }}" {% if c.id == screening.room.cinema_id %}selected{% endif %}>{{ c.cinema_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select class="form-select" name="movie_id" required>
+      {% for m in movies %}
+      <option value="{{ m.id }}" {% if m.id == screening.movie_id %}selected{% endif %}>{{ m.title }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select class="form-select" id="room_select" name="room_id" required>
+      {% for r in rooms %}
+      <option value="{{ r.id }}" data-cinema-id="{{ r.cinema_id }}" {% if r.id == screening.room_id %}selected{% endif %}>{{ r.room_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <input class="form-control" type="date" name="screening_date" value="{{ screening.screening_date.strftime('%Y-%m-%d') }}" required>
+  </div>
+  <div class="col-md-2">
+    <input class="form-control" type="time" name="screening_time" value="{{ screening.screening_time.strftime('%H:%M') }}" required>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-success w-100">Luu</button>
+  </div>
+</form>
+<a class="btn btn-secondary btn-sm" href="{{ url_for('screenings_movie', movie_id=screening.movie_id) }}">Quay lại</a>
+<script>
+  (function () {
+    const cinemaSelect = document.getElementById("cinema_select");
+    const roomSelect = document.getElementById("room_select");
+    if (!cinemaSelect || !roomSelect) return;
+    const roomOptions = Array.from(roomSelect.querySelectorAll("option[data-cinema-id]"));
+
+    function syncRooms() {
+      const cinemaId = cinemaSelect.value;
+      roomOptions.forEach((option) => {
+        option.hidden = option.dataset.cinemaId !== cinemaId;
+      });
+      if (roomSelect.selectedOptions.length && roomSelect.selectedOptions[0].hidden) {
+        roomSelect.value = "";
+      }
+    }
+
+    cinemaSelect.addEventListener("change", syncRooms);
+    syncRooms();
+  })();
+</script>
+{% endblock %}

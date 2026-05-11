@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-soft">
+  <h2 class="soft-title">Đăng ký thành viên</h2>
+  <p class="soft-subtitle">Tạo tài khoản để lưu thông tin và đặt vé nhanh hơn.</p>
+  <div class="alert alert-warning">
+    Quyền lợi hạng thành viên theo tổng chi tiêu mua vé:
+    <strong>Vàng từ 1.000.000đ</strong>,
+    <strong>Bạch kim từ 3.000.000đ</strong>,
+    <strong>Kim cương từ 5.000.000đ</strong>.
+  </div>
+
+  <form method="post" class="soft-form" style="max-width: 520px;">
+    <div class="mb-3">
+      <label class="form-label">Họ tên</label>
+      <input class="form-control" name="name" value="{{ name or '' }}" placeholder="VD: Nguyễn Văn A" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Số điện thoại</label>
+      <input class="form-control" name="phone" value="{{ phone or '' }}" placeholder="VD: 0901234567" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Mật khẩu</label>
+      <input class="form-control" type="password" name="password" placeholder="Tối thiểu 6 ký tự" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Nhập lại mật khẩu</label>
+      <input class="form-control" type="password" name="confirm_password" placeholder="Nhập lại mật khẩu" required>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-cgv-primary" type="submit">Tạo tài khoản</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('login') }}">Đã có tài khoản</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

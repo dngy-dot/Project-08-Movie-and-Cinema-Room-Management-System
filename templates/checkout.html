@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-soft booking-page checkout-page">
+  {% set booking_step = 4 %}
+  {% set movie_id = screening.movie_id %}
+  {% set booking_date = screening.screening_date %}
+  {% set screening_id = screening.id %}
+  {% include "_booking_steps.html" %}
+
+  <div class="checkout-hero mb-4">
+    <div class="checkout-hero__poster">
+      {% if screening.movie.poster_url %}
+        <img src="{{ screening.movie.poster_url }}" alt="" class="checkout-hero__img">
+      {% else %}
+        <div class="checkout-hero__placeholder" aria-hidden="true">{{ (screening.movie.title or '?')[0:1]|upper }}</div>
+      {% endif %}
+    </div>
+    <div class="checkout-hero__body">
+      <p class="checkout-hero__eyebrow">Xác nhận đơn hàng</p>
+      <h2 class="checkout-hero__title">{{ screening.movie.title }}</h2>
+      <div class="checkout-hero__chips">
+        <span class="checkout-chip checkout-chip--time">
+          {{ screening.screening_time.strftime('%H:%M') }}
+          <span class="checkout-chip__sub">{{ screening.screening_date.strftime('%d/%m/%Y') }}</span>
+        </span>
+        <span class="checkout-chip">{{ screening.room.room_name }}</span>
+        <span class="checkout-chip checkout-chip--muted">{{ screening.movie.genre }}</span>
+      </div>
+      <div class="checkout-seats-block">
+        <span class="checkout-seats-label">Ghế đã chọn</span>
+        <div class="checkout-seat-pills" role="list">
+          {% for s in selected_seats %}
+            <span class="checkout-seat-pill" role="listitem">{{ s }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-5 order-lg-2">
+      <div class="qr-payment-card">
+        <h3 class="qr-payment-card__title">Quét mã thanh toán</h3>
+        <p class="qr-payment-card__lead small text-muted">Chuyển khoản đúng số tiền và nội dung bên dưới. Hệ thống đối soát tự động.</p>
+        <div class="qr-payment-card__frame">
+          {% if vietqr_url %}
+            <img src="{{ vietqr_url }}" alt="Mã QR VietQR thanh toán" class="qr-payment-card__qr">
+          {% else %}
+            <img src="data:image/png;base64,{{ qr_base64 }}" alt="Mã QR thanh toán" class="qr-payment-card__qr">
+          {% endif %}
+        </div>
+        <dl class="qr-payment-card__meta">
+          <div><dt>Mã đơn</dt><dd><code class="checkout-code">{{ order_code }}</code></dd></div>
+          <div><dt>Số tiền</dt><dd><strong>{{ "{:,.0f}".format(total_amount) }} đ</strong></dd></div>
+        </dl>
+        <p class="qr-payment-card__note small">Nội dung CK: <strong>SEVQR {{ order_code }}</strong></p>
+        <p class="qr-payment-card__status small" id="payment-status-text">Đang chờ thanh toán...</p>
+        <form method="post" action="{{ url_for('confirm_payment', screening_id=screening.id) }}" class="d-grid gap-2">
+          <input type="hidden" name="customer_name" value="{{ customer_name }}">
+          <input type="hidden" name="customer_phone" value="{{ customer_phone }}">
+          <input type="hidden" name="seat_number" value="{{ selected_seats_raw }}">
+          <input type="hidden" name="order_code" value="{{ order_code }}">
+          <button type="submit" class="btn btn-outline-success w-100">Kiểm tra thanh toán ngay</button>
+        </form>
+        <a class="btn btn-outline-secondary w-100" href="{{ url_for('book_ticket', screening_id=screening.id) }}">Quay lại chọn ghế</a>
+      </div>
+    </div>
+
+    <div class="col-lg-7 order-lg-1">
+      <div class="checkout-summary-card">
+        <h3 class="checkout-summary-card__title">Chi tiết vé</h3>
+        <ul class="checkout-lines">
+          <li class="checkout-lines__row">
+            <span>Khách hàng</span>
+            <span>{{ customer_name }}</span>
+          </li>
+          <li class="checkout-lines__row">
+            <span>Điện thoại</span>
+            <span>{{ customer_phone }}</span>
+          </li>
+          <li class="checkout-lines__row">
+            <span>Số lượng vé</span>
+            <span>{{ selected_seats | length }}</span>
+          </li>
+          <li class="checkout-lines__row">
+            <span>Đơn giá</span>
+            <span>{{ "{:,.0f}".format(ticket_price) }} đ</span>
+          </li>
+          <li class="checkout-lines__row">
+            <span>Tạm tính</span>
+            <span>{{ "{:,.0f}".format(original_amount) }} đ</span>
+          </li>
+          {% if voucher_code %}
+            <li class="checkout-lines__row checkout-lines__row--accent">
+              <span>Voucher {{ voucher_code }}</span>
+              <span>−{{ discount_percent }}%</span>
+            </li>
+            <li class="checkout-lines__row checkout-lines__row--discount">
+              <span>Giảm giá</span>
+              <span>−{{ "{:,.0f}".format(discount_amount) }} đ</span>
+            </li>
+          {% endif %}
+          <li class="checkout-lines__row checkout-lines__row--total">
+            <span>Tổng thanh toán</span>
+            <span>{{ "{:,.0f}".format(total_amount) }} đ</span>
+          </li>
+        </ul>
+      </div>
+
+      <form method="post" action="{{ url_for('apply_voucher', order_code=order_code) }}" class="voucher-panel mt-3">
+        <label class="form-label small fw-semibold mb-1">Mã voucher</label>
+        <div class="input-group">
+          <input class="form-control" name="voucher_code" value="{{ voucher_code or '' }}" placeholder="Nhập mã (nếu có)" autocomplete="off">
+          <button class="btn btn-outline-primary" type="submit">Áp dụng</button>
+        </div>
+        <button class="btn btn-link btn-sm px-0 text-secondary" type="submit" name="voucher_code" value="">Gỡ voucher</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+  const statusText = document.getElementById("payment-status-text");
+  const statusEndpoint = "{{ url_for('payment_status', order_code=order_code) }}";
+
+  async function checkPaymentStatus() {
+    try {
+      const response = await fetch(statusEndpoint);
+      const data = await response.json();
+      if (data.paid) {
+        statusText.textContent = "Đã nhận thanh toán. Đang chuyển trang...";
+        window.location.href = data.redirect_url;
+        return;
+      }
+      statusText.textContent = "Đang chờ thanh toán... (tự kiểm tra mỗi 5 giây)";
+    } catch (err) {
+      statusText.textContent = "Tạm thời chưa kiểm tra được. Hệ thống sẽ thử lại...";
+    }
+  }
+
+  checkPaymentStatus();
+  setInterval(checkPaymentStatus, 5000);
+</script>
+{% endblock %}

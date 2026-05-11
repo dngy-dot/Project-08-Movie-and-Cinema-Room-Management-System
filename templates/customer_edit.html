@@ -1,0 +1,16 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h2 class="soft-title">Sửa khách hàng</h2>
+<form method="post" class="row g-2 mb-3 soft-form">
+  <div class="col-md-5">
+    <input class="form-control" name="name" value="{{ customer.name }}" required>
+  </div>
+  <div class="col-md-5">
+    <input class="form-control" name="phone" value="{{ customer.phone }}" required>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-success w-100">Luu</button>
+  </div>
+</form>
+<a class="btn btn-secondary btn-sm" href="{{ url_for('customers') }}">Quay lại</a>
+{% endblock %}

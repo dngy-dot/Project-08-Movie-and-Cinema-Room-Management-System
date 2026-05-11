@@ -1,0 +1,53 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div class="admin-header">
+  <div>
+    <h2 class="soft-title">Quản lý phim</h2>
+    <div class="admin-muted">Thêm, sửa, xóa phim và cập nhật poster.</div>
+  </div>
+</div>
+<form method="post" class="row g-2 mb-4 soft-form">
+  <div class="col-md-4"><input class="form-control" name="title" placeholder="Tên phim" required></div>
+  <div class="col-md-2"><input class="form-control" name="genre" placeholder="Thể loại" required></div>
+  <div class="col-md-2"><input class="form-control" type="number" min="1" name="duration_minutes" placeholder="Thời lượng" required></div>
+  <div class="col-md-2">
+    <select class="form-select" name="release_status">
+      <option value="now_showing">Đang chiếu</option>
+      <option value="coming_soon">Sắp chiếu</option>
+    </select>
+  </div>
+  <div class="col-md-2"><button class="btn btn-success w-100">Thêm</button></div>
+  <div class="col-md-12"><input class="form-control" name="poster_url" placeholder="Poster URL (https://...)"></div>
+</form>
+<div class="table-responsive cgv-table-wrap">
+  <table class="table table-hover align-middle mb-0 admin-table">
+    <thead><tr><th>ID</th><th>Poster</th><th>Tên phim</th><th>Thể loại</th><th>Thời lượng</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+    <tbody>
+      {% for m in movies %}
+      <tr>
+        <td>{{ m.id }}</td>
+        <td>{% if m.poster_url %}<a href="{{ m.poster_url }}" target="_blank">Link poster</a>{% else %}-{% endif %}</td>
+        <td>{{ m.title }}</td>
+        <td>{{ m.genre }}</td>
+        <td>{{ m.duration_minutes }} phut</td>
+        <td>
+          {% if m.release_status == "now_showing" %}
+            <span class="chip-status chip-now">Đang chiếu</span>
+          {% else %}
+            <span class="chip-status chip-soon">Sắp chiếu</span>
+          {% endif %}
+        </td>
+        <td class="d-flex gap-2">
+          <a class="btn btn-outline-warning btn-sm" href="{{ url_for('edit_movie', movie_id=m.id) }}">Sửa</a>
+          <form method="post" action="{{ url_for('delete_movie', movie_id=m.id) }}" onsubmit="return confirm('Bạn có chắc muốn xóa phim này?');">
+            <button class="btn btn-outline-danger btn-sm">Xóa</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center">Chưa có phim.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

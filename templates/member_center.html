@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-soft member-page">
+  <h2 class="soft-title">Thông tin thành viên</h2>
+  <p class="soft-subtitle">Thông tin tài khoản và quyền lợi theo hạng hiện tại.</p>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="member-stat-card">
+        <div class="member-stat-card__label">Họ tên</div>
+        <strong class="member-stat-card__value">{{ member.name }}</strong>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="member-stat-card">
+        <div class="member-stat-card__label">Số điện thoại</div>
+        <strong class="member-stat-card__value">{{ member.phone }}</strong>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="member-stat-card member-stat-card--tier">
+        <div class="member-stat-card__label">Hạng hiện tại</div>
+        <strong class="member-stat-card__value">{{ tier.label }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="member-spent-banner mb-4">
+    Tổng chi tiêu mua vé: <strong>{{ "{:,.0f}".format(total_spent) }} đ</strong>
+  </div>
+
+  <h3 class="h5 mb-3">Ưu đãi theo từng hạng</h3>
+  <div class="row g-3">
+    {% for item in member_tiers %}
+    <div class="col-md-6">
+      <div class="member-tier-card member-tier-card--{{ item.code }} h-100">
+        <div class="member-tier-card__body">
+          <h4 class="member-tier-card__title">
+            {{ item.label }}
+            {% if item.code == tier.code %}
+              <span class="member-tier-card__badge">Hạng của bạn</span>
+            {% endif %}
+          </h4>
+          <p class="member-tier-card__threshold">
+            Mốc chi tiêu: từ {{ "{:,.0f}".format(item.min_spent) }} đ
+          </p>
+          <ul class="member-tier-card__benefits">
+            {% for benefit in tier_benefits.get(item.code, []) %}
+            <li>{{ benefit }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

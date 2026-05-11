@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% block content %}
+{# Hàng icon lối tắt phía trên banner (kiểu CGV) #}
+<nav class="cgv-quick-icons mb-3" aria-label="Lối tắt dịch vụ">
+  <div class="cgv-quick-icons__grid">
+    <a class="cgv-quick-item" href="{{ url_for('cinemas_public') }}">
+      <span class="cgv-quick-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="48" height="48" fill="none"><path fill="#c41e3a" d="M12 52V28l20-12 20 12v24H12z"/><path fill="#f5e6d3" d="M18 30h28v18H18z"/><path fill="#333" d="M26 36h12v4H26z"/></svg>
+      </span>
+      <span class="cgv-quick-title">Rạp chiếu</span>
+      <span class="cgv-quick-sub">Cinemas</span>
+    </a>
+    <a class="cgv-quick-item" href="{{ url_for('movies_now_showing') }}">
+      <span class="cgv-quick-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="48" height="48" fill="none"><circle cx="22" cy="32" r="12" fill="#db1a21"/><circle cx="42" cy="32" r="12" fill="#db1a21"/><circle cx="22" cy="32" r="4" fill="#f5f0e8"/><circle cx="42" cy="32" r="4" fill="#f5f0e8"/><path stroke="#333" stroke-width="2" d="M34 32h4"/></svg>
+      </span>
+      <span class="cgv-quick-title">Đang chiếu</span>
+      <span class="cgv-quick-sub">Now Showing</span>
+    </a>
+    <a class="cgv-quick-item" href="tel:19001234">
+      <span class="cgv-quick-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="48" height="48" fill="none"><path fill="#db1a21" d="M18 22c0-4 4-8 14-8s14 4 14 8v20c0 4-4 8-14 8S18 46 18 42V22z"/><path fill="#f5e6d3" d="M24 28h16v12H24z"/></svg>
+      </span>
+      <span class="cgv-quick-title">Liên hệ</span>
+      <span class="cgv-quick-sub">Contact</span>
+    </a>
+    <a class="cgv-quick-item" href="{{ url_for('member_center') if current_member else url_for('login') }}">
+      <span class="cgv-quick-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="48" height="48" fill="none"><path fill="#db1a21" d="M14 40l8-20 8 6 12-14 8 28H14z"/><circle cx="46" cy="18" r="6" fill="#fca5a5"/></svg>
+      </span>
+      <span class="cgv-quick-title">Thành viên</span>
+      <span class="cgv-quick-sub">Member</span>
+    </a>
+  </div>
+</nav>
+
+{# Banner lớn kiểu CGV: slideshow + pager + prev/next (tham khảo home_big_banner) #}
+<div class="slideshow-container mb-3" id="home_big_banner" data-autoplay-ms="5500">
+  <ul class="slideshow" role="list">
+    <li class="slide-item is-active" aria-hidden="false">
+      <a href="#chon-phim"><img src="https://iguov8nhvyobj.vcdn.cloud/media/banner/cache/1/b58515f018eb873dafa430b6f9ae0c1e/m/e/member79.jpg" alt="Ưu đãi thành viên" width="980" height="448" fetchpriority="high"></a>
+    </li>
+    <li class="slide-item" aria-hidden="true">
+      <a href="#chon-phim" tabindex="-1"><img src="https://iguov8nhvyobj.vcdn.cloud/media/banner/cache/1/b58515f018eb873dafa430b6f9ae0c1e/9/8/980x448-bts.jpg" alt="Sự kiện" width="980" height="448" loading="lazy"></a>
+    </li>
+    <li class="slide-item" aria-hidden="true">
+      <a href="#chon-phim" tabindex="-1"><img src="https://iguov8nhvyobj.vcdn.cloud/media/banner/cache/1/b58515f018eb873dafa430b6f9ae0c1e/9/8/980wx448h_17__6.jpg" alt="Phim đang chiếu" width="980" height="448" loading="lazy"></a>
+    </li>
+    <li class="slide-item" aria-hidden="true">
+      <a href="#chon-phim" tabindex="-1"><img src="https://iguov8nhvyobj.vcdn.cloud/media/banner/cache/1/b58515f018eb873dafa430b6f9ae0c1e/q/u/quydutuuyen.jpg" alt="Phim mới" width="980" height="448" loading="lazy"></a>
+    </li>
+    <li class="slide-item" aria-hidden="true">
+      <a href="#chon-phim" tabindex="-1"><img src="https://iguov8nhvyobj.vcdn.cloud/media/banner/cache/1/b58515f018eb873dafa430b6f9ae0c1e/d/u/duoibongdienha.jpg" alt="Dưới bóng điện hạ" width="980" height="448" loading="lazy"></a>
+    </li>
+    <li class="slide-item" aria-hidden="true">
+      <a href="#chon-phim" tabindex="-1"><img src="https://iguov8nhvyobj.vcdn.cloud/media/banner/cache/1/b58515f018eb873dafa430b6f9ae0c1e/t/h/thedrama.jpg" alt="The Drama" width="980" height="448" loading="lazy"></a>
+    </li>
+  </ul>
+  <div class="slideshow-pager home_big_banner_pager" role="tablist" aria-label="Chọn banner"></div>
+  <button type="button" class="slideshow-nav slideshow-prev home_big_banner_prev" aria-label="Banner trước">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+  </button>
+  <button type="button" class="slideshow-nav slideshow-next home_big_banner_next" aria-label="Banner sau">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+  </button>
+</div>
+
+<section id="chon-phim" class="mb-5 pb-3">
+  <div class="section-marquee-heading">
+    <span class="marquee-line d-none d-sm-block" aria-hidden="true"></span>
+    <h2 class="marquee-title">Chọn phim</h2>
+    <span class="marquee-line d-none d-sm-block" aria-hidden="true"></span>
+  </div>
+
+  <div class="d-flex justify-content-center mb-4">
+    <div class="movie-tabs" role="tablist" aria-label="Chọn loại phim trong mục này">
+      <button type="button" class="movie-tab active" role="tab" aria-selected="true" data-movie-tab="now" id="tab-movie-now">Đang chiếu</button>
+      <button type="button" class="movie-tab" role="tab" aria-selected="false" data-movie-tab="soon" id="tab-movie-soon">Sắp chiếu</button>
+    </div>
+  </div>
+
+  <div id="movie-picker-panels">
+    <div id="movie-panel-now" class="movie-picker-panel" role="tabpanel" aria-labelledby="tab-movie-now">
+      <div class="movie-carousel-shell">
+        <button type="button" class="carousel-nav carousel-nav-prev d-none d-md-flex" aria-label="Trước" data-carousel="carousel-now" data-dir="-1">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <div id="carousel-now" class="movie-carousel">
+          {% for movie in now_showing %}
+          {% set g = movie.genre|default('', true)|lower %}
+          {% set rating_all = 'animation' in g or 'family' in g or 'hoạt hình' in g %}
+          <article class="cgv-poster-card">
+            {% if rating_all %}
+            <span class="poster-rating poster-rating--all">P</span>
+            {% else %}
+            <span class="poster-rating poster-rating--teen">T16</span>
+            {% endif %}
+            <div class="poster-media">
+              {% if movie.poster_url %}
+              <img class="movie-poster-img" src="{{ movie.poster_url }}" alt="{{ movie.title }}" loading="lazy">
+              {% else %}
+              <div class="movie-poster">{{ movie.title[0] }}</div>
+              {% endif %}
+              <div class="poster-overlay">
+                <a class="play-fab" href="{{ url_for('movie_detail', movie_id=movie.id) }}" aria-label="Xem chi tiết {{ movie.title }}">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                </a>
+                <div class="poster-overlay-bottom">
+                  <p class="overlay-title">{{ movie.title }}</p>
+                  <p class="overlay-meta">{{ movie.genre }} · {{ movie.duration_minutes }} phút</p>
+                  <div class="overlay-actions">
+                    <a class="btn-cgv btn-cgv-outline" href="{{ url_for('movie_detail', movie_id=movie.id) }}">Xem chi tiết</a>
+                    <a class="btn-cgv" href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 6H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H4V8h16v8zM18 9h-5v6h5V9zm-1 1.5h-3v3h3v-3z"/></svg>
+                      Mua vé
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+          {% else %}
+          <div class="w-100">
+            <div class="empty-box">Chưa có phim đang chiếu.</div>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" class="carousel-nav carousel-nav-next d-none d-md-flex" aria-label="Sau" data-carousel="carousel-now" data-dir="1">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="movie-panel-soon" class="movie-picker-panel" role="tabpanel" aria-labelledby="tab-movie-soon" hidden>
+      <div class="movie-carousel-shell">
+        <button type="button" class="carousel-nav carousel-nav-prev d-none d-md-flex" aria-label="Trước" data-carousel="carousel-soon" data-dir="-1">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <div id="carousel-soon" class="movie-carousel">
+          {% for movie in coming_soon %}
+          {% set g = movie.genre|default('', true)|lower %}
+          {% set rating_all = 'animation' in g or 'family' in g or 'hoạt hình' in g %}
+          <article class="cgv-poster-card">
+            {% if rating_all %}
+            <span class="poster-rating poster-rating--all">P</span>
+            {% else %}
+            <span class="poster-rating poster-rating--teen">T16</span>
+            {% endif %}
+            <div class="poster-media">
+              {% if movie.poster_url %}
+              <img class="movie-poster-img" src="{{ movie.poster_url }}" alt="{{ movie.title }}" loading="lazy">
+              {% else %}
+              <div class="movie-poster">{{ movie.title[0] }}</div>
+              {% endif %}
+              <div class="poster-overlay">
+                <a class="play-fab" href="{{ url_for('movie_detail', movie_id=movie.id) }}" aria-label="Xem chi tiết {{ movie.title }}">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                </a>
+                <div class="poster-overlay-bottom">
+                  <p class="overlay-title">{{ movie.title }}</p>
+                  <p class="overlay-meta">{{ movie.genre }} · {{ movie.duration_minutes }} phút</p>
+                  <div class="overlay-actions">
+                    <a class="btn-cgv btn-cgv-outline" href="{{ url_for('movie_detail', movie_id=movie.id) }}">Xem chi tiết</a>
+                    <a class="btn-cgv" href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 6H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H4V8h16v8zM18 9h-5v6h5V9zm-1 1.5h-3v3h3v-3z"/></svg>
+                      Mua vé
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+          {% else %}
+          <div class="w-100">
+            <div class="empty-box">Chưa có phim sắp chiếu.</div>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" class="carousel-nav carousel-nav-next d-none d-md-flex" aria-label="Sau" data-carousel="carousel-soon" data-dir="1">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-5 pt-2" id="uu-dai">
+    <div class="section-marquee-heading">
+      <span class="marquee-line d-none d-sm-block" aria-hidden="true"></span>
+      <h2 class="marquee-title">Ưu đãi &amp; sự kiện</h2>
+      <span class="marquee-line d-none d-sm-block" aria-hidden="true"></span>
+    </div>
+    <div class="event-ribbon-wrap text-center">
+      <span class="event-ribbon">Thành viên · Tin mới &amp; ưu đãi</span>
+    </div>
+    <div class="movie-carousel-shell mt-3">
+      <button type="button" class="carousel-nav carousel-nav-prev d-none d-md-flex" aria-label="Trước" data-carousel="carousel-promo" data-dir="-1">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+      </button>
+      <div id="carousel-promo" class="movie-carousel promo-carousel">
+        <div class="promo-card promo-card--gold">
+          <h6>Gia nhập ngay — quà tặng đầy tay</h6>
+          <p>Tích điểm mỗi suất chiếu, đổi combo bắp nước và voucher giảm giá.</p>
+        </div>
+        <div class="promo-card promo-card--red">
+          <h6>Đồng giá ưu đãi cuối tuần</h6>
+          <p>Suất sáng và trưa thứ 2–4: giá vé đặc biệt cho nhóm bạn và gia đình.</p>
+        </div>
+        <div class="promo-card promo-card--blue">
+          <h6>Combo online tiện lợi</h6>
+          <p>Đặt vé kèm combo từ 79.000đ — nhận tại quầy không xếp hàng lâu.</p>
+        </div>
+        <div class="promo-card promo-card--party">
+          <h6>Sinh nhật thành viên</h6>
+          <p>Tháng sinh nhật: tặng nước upgrade và ưu đãi vé IMAX/Dolby.</p>
+        </div>
+      </div>
+      <button type="button" class="carousel-nav carousel-nav-next d-none d-md-flex" aria-label="Sau" data-carousel="carousel-promo" data-dir="1">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+  (function () {
+    function scrollCarousel(carouselId, direction) {
+      const el = document.getElementById(carouselId);
+      if (!el) return;
+      const card = el.querySelector(".cgv-poster-card, .promo-card");
+      const gap = 20;
+      const delta = card ? (card.getBoundingClientRect().width + gap) * direction : 320 * direction;
+      el.scrollBy({ left: delta, behavior: "smooth" });
+    }
+
+    document.querySelectorAll(".carousel-nav").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-carousel");
+        const dir = parseInt(btn.getAttribute("data-dir"), 10) || 1;
+        scrollCarousel(id, dir);
+      });
+    });
+
+    (function initChonPhimTabs() {
+      const tabNow = document.getElementById("tab-movie-now");
+      const tabSoon = document.getElementById("tab-movie-soon");
+      const panelNow = document.getElementById("movie-panel-now");
+      const panelSoon = document.getElementById("movie-panel-soon");
+      if (!tabNow || !tabSoon || !panelNow || !panelSoon) return;
+
+      function activate(which) {
+        const isSoon = which === "soon";
+        tabNow.classList.toggle("active", !isSoon);
+        tabSoon.classList.toggle("active", isSoon);
+        tabNow.setAttribute("aria-selected", isSoon ? "false" : "true");
+        tabSoon.setAttribute("aria-selected", isSoon ? "true" : "false");
+        panelNow.hidden = isSoon;
+        panelSoon.hidden = !isSoon;
+      }
+
+      tabNow.addEventListener("click", () => activate("now"));
+      tabSoon.addEventListener("click", () => activate("soon"));
+    })();
+
+    (function initHomeBigBanner() {
+      const root = document.getElementById("home_big_banner");
+      if (!root) return;
+      const slides = root.querySelectorAll(".slide-item");
+      const pager = root.querySelector(".home_big_banner_pager");
+      const prevBtn = root.querySelector(".home_big_banner_prev");
+      const nextBtn = root.querySelector(".home_big_banner_next");
+      if (!slides.length || !pager || !prevBtn || !nextBtn) return;
+
+      let idx = 0;
+      let timer = null;
+      const delay = Math.max(3000, parseInt(root.getAttribute("data-autoplay-ms"), 10) || 5500);
+
+      slides.forEach((_, i) => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "pager-box" + (i === 0 ? " is-active" : "");
+        dot.setAttribute("role", "tab");
+        dot.setAttribute("aria-selected", i === 0 ? "true" : "false");
+        dot.setAttribute("aria-label", "Banner " + (i + 1));
+        dot.addEventListener("click", () => {
+          go(i);
+          resetTimer();
+        });
+        pager.appendChild(dot);
+      });
+
+      function go(n) {
+        idx = (n + slides.length) % slides.length;
+        slides.forEach((el, i) => {
+          const on = i === idx;
+          el.classList.toggle("is-active", on);
+          el.setAttribute("aria-hidden", on ? "false" : "true");
+          const a = el.querySelector("a");
+          if (a) a.tabIndex = on ? 0 : -1;
+        });
+        pager.querySelectorAll(".pager-box").forEach((d, i) => {
+          d.classList.toggle("is-active", i === idx);
+          d.setAttribute("aria-selected", i === idx ? "true" : "false");
+        });
+      }
+
+      function nextSlide() {
+        go(idx + 1);
+      }
+
+      function resetTimer() {
+        if (timer) clearInterval(timer);
+        timer = setInterval(nextSlide, delay);
+      }
+
+      prevBtn.addEventListener("click", () => {
+        go(idx - 1);
+        resetTimer();
+      });
+      nextBtn.addEventListener("click", () => {
+        go(idx + 1);
+        resetTimer();
+      });
+
+      root.addEventListener("mouseenter", () => {
+        if (timer) clearInterval(timer);
+      });
+      root.addEventListener("mouseleave", () => {
+        resetTimer();
+      });
+
+      go(0);
+      resetTimer();
+    })();
+  })();
+</script>
+{% endblock %}
