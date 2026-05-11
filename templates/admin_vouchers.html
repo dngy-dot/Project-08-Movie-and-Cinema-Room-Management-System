@@ -29,7 +29,7 @@
         <td><strong>{{ item.code }}</strong></td>
         <td>{{ item.discount_percent }}%</td>
         <td>{{ usage_counts.get(item.id, 0) }}</td>
-        <td>{{ item.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+        <td>{% if item.created_at %}{{ item.created_at.strftime('%d-%m-%Y %H:%M') }}{% else %}—{% endif %}</td>
         <td class="text-end">
           <form method="post" action="{{ url_for('delete_voucher', voucher_id=item.id) }}" class="d-inline">
             <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Xóa voucher này?')">Xóa</button>

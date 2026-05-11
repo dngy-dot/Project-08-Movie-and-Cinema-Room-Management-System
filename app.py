@@ -211,18 +211,20 @@ class PaymentOrder(db.Model):
 class Voucher(db.Model):
     __tablename__ = "vouchers"
 
-    id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(30), nullable=False, unique=True, index=True)
-    discount_percent = db.Column(db.Integer, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    id = db.Column("ID", db.Integer, primary_key=True)
+    code = db.Column("Code", db.String(30), nullable=False, unique=True, index=True)
+    discount_percent = db.Column("DiscountPercent", db.Integer, nullable=False, default=0)
+    created_at = db.Column("CreatedAt", db.DateTime, nullable=False, default=datetime.utcnow)
 
 
 class VoucherUsage(db.Model):
+    """Bảng `voucher_usages` từ create_all dùng snake_case; bảng `vouchers` theo schema.sql dùng PascalCase."""
+
     __tablename__ = "voucher_usages"
 
     id = db.Column(db.Integer, primary_key=True)
     voucher_id = db.Column(
-        db.Integer, db.ForeignKey("vouchers.id", ondelete="CASCADE"), nullable=False, index=True
+        db.Integer, db.ForeignKey("vouchers.ID", ondelete="CASCADE"), nullable=False, index=True
     )
     phone_number = db.Column(db.String(30), nullable=False, index=True)
     order_code = db.Column(db.String(16), nullable=False, unique=True, index=True)
@@ -652,6 +654,29 @@ def maybe_auto_confirm_with_sepay(order: PaymentOrder) -> bool:
     return False
 
 
+def _add_datetime_column_not_null(table: str, column: str) -> None:
+    """Thêm cột thời gian NOT NULL tương thích MySQL cũ (DATETIME + DEFAULT CURRENT_TIMESTAMP lỗi trước 5.6.5)."""
+    dialect = db.engine.dialect.name
+    if dialect == "sqlite":
+        db.session.execute(
+            text(
+                f"ALTER TABLE {table} ADD COLUMN {column} DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+            )
+        )
+    elif dialect in ("mysql", "mariadb"):
+        db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} DATETIME NULL"))
+        db.session.execute(
+            text(f"UPDATE {table} SET {column} = UTC_TIMESTAMP() WHERE {column} IS NULL")
+        )
+        db.session.execute(text(f"ALTER TABLE {table} MODIFY COLUMN {column} DATETIME NOT NULL"))
+    else:
+        db.session.execute(
+            text(
+                f"ALTER TABLE {table} ADD COLUMN {column} TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
+            )
+        )
+
+
 def ensure_voucher_schema() -> None:
     """Tạo bảng voucher hoặc bổ sung cột thiếu (DB dump cũ: có bảng nhưng thiếu discount_percent...)."""
     engine = db.engine
@@ -663,7 +688,8 @@ def ensure_voucher_schema() -> None:
         db.session.commit()
     else:
         col_names = {c["name"].lower() for c in insp.get_columns(vtab)}
-        if "discount_percent" not in col_names:
+        has_discount = "discount_percent" in col_names or "discountpercent" in col_names
+        if not has_discount:
             db.session.execute(
                 text(
                     f"ALTER TABLE {vtab} ADD COLUMN discount_percent INTEGER NOT NULL DEFAULT 0"
@@ -671,12 +697,10 @@ def ensure_voucher_schema() -> None:
             )
             db.session.commit()
         col_names = {c["name"].lower() for c in inspect(engine).get_columns(vtab)}
-        if "created_at" not in col_names:
-            db.session.execute(
-                text(
-                    f"ALTER TABLE {vtab} ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
-                )
-            )
+        has_created = "created_at" in col_names or "createdat" in col_names
+        if not has_created:
+            pascal_vouchers = "discountpercent" in col_names
+            _add_datetime_column_not_null(vtab, "CreatedAt" if pascal_vouchers else "created_at")
             db.session.commit()
 
     insp = inspect(engine)
@@ -685,12 +709,10 @@ def ensure_voucher_schema() -> None:
         db.session.commit()
     else:
         ucols = {c["name"].lower() for c in insp.get_columns(utab)}
-        if "used_at" not in ucols:
-            db.session.execute(
-                text(
-                    f"ALTER TABLE {utab} ADD COLUMN used_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
-                )
-            )
+        has_used = "used_at" in ucols or "usedat" in ucols
+        if not has_used:
+            pascal_usages = "voucherid" in ucols or "phonenumber" in ucols
+            _add_datetime_column_not_null(utab, "UsedAt" if pascal_usages else "used_at")
             db.session.commit()
 
 
