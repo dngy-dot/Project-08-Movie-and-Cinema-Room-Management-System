@@ -1,6 +1,6 @@
 USE cinema_db;
 
--- 1. Movies (10 Phim)
+-- 1. Movies
 INSERT INTO Movies (MovieTitle, Genre, DurationMinutes) VALUES
 ('Avengers: Endgame', 'Hành động', 181),
 ('Inception', 'Khoa học viễn tưởng', 148),
@@ -13,7 +13,7 @@ INSERT INTO Movies (MovieTitle, Genre, DurationMinutes) VALUES
 ('Your Name', 'Anime', 107),
 ('Dune: Part Two', 'Hành động', 166);
 
--- 2. Cinemas (10 Rạp)
+-- 2. Cinemas
 INSERT INTO Cinemas (CinemaName, Address) VALUES
 ('CGV Vincom Bà Triệu',    '191 Bà Triệu, Hai Bà Trưng, Hà Nội'),
 ('Lotte Cinema Gò Vấp',    '242 Nguyễn Văn Lượng, Gò Vấp, HCM'),
@@ -26,8 +26,7 @@ INSERT INTO Cinemas (CinemaName, Address) VALUES
 ('Starlight Đà Nẵng',      'Tầng 4 TTTM Nguyễn Kim, Đà Nẵng'),
 ('Rio Cinema Thái Bình',   'Lý Thường Kiệt, TP. Thái Bình');
 
--- 3. CinemaRooms (10 Phòng)
--- FIX: phòng cuối dùng CinemaID=10 (Rio Cinema) để Screening số 9 dùng RoomID=10 không bị lỗi FK
+-- 3. CinemaRooms
 INSERT INTO CinemaRooms (CinemaID, RoomName, Capacity) VALUES
 (1,  'Room 01 - IMAX',   200),
 (1,  'Room 02 - Gold',    50),
@@ -40,7 +39,7 @@ INSERT INTO CinemaRooms (CinemaID, RoomName, Capacity) VALUES
 (8,  'DCine Standard',    90),
 (10, 'Rio Hall',         110);
 
--- 4. Screenings (10 Suất chiếu)
+-- 4. Screenings
 INSERT INTO Screenings (MovieID, RoomID, ScreeningDate, ScreeningTime) VALUES
 (1,  1,  DATE_ADD(CURDATE(), INTERVAL 1 DAY), '19:00:00'),
 (2,  1,  DATE_ADD(CURDATE(), INTERVAL 1 DAY), '22:30:00'),
@@ -53,7 +52,7 @@ INSERT INTO Screenings (MovieID, RoomID, ScreeningDate, ScreeningTime) VALUES
 (9,  10, DATE_ADD(CURDATE(), INTERVAL 5 DAY), '15:30:00'),
 (10, 4,  DATE_ADD(CURDATE(), INTERVAL 5 DAY), '19:30:00');
 
--- 5. Customers (10 Khách hàng)
+-- 5. Customers
 INSERT INTO Customers (CustomerName, PhoneNumber) VALUES
 ('Nguyễn Văn A', '0901234567'),
 ('Trần Thị B',   '0912345678'),
@@ -66,7 +65,7 @@ INSERT INTO Customers (CustomerName, PhoneNumber) VALUES
 ('Ngô Thanh I',  '0989012345'),
 ('Đỗ Hoàng J',   '0990123456');
 
--- 6. Vouchers (10 Voucher)
+-- 6. Vouchers
 INSERT INTO Vouchers (Code, DiscountPercent) VALUES
 ('GIAM20',    20),
 ('WELCOME50', 50),
@@ -79,7 +78,7 @@ INSERT INTO Vouchers (Code, DiscountPercent) VALUES
 ('FREESHIP',   5),
 ('LUCKY99',   99);
 
--- 7. PaymentOrders (10 Đơn hàng)
+-- 7. PaymentOrders
 INSERT INTO PaymentOrders (OrderCode, ScreeningID, CustomerName, CustomerPhone, SeatNumbers, OriginalAmount, VoucherCode, DiscountPercent, DiscountAmount, TotalAmount, Status, PaidAt) VALUES
 ('ORD001', 1,  'Nguyễn Văn A', '0901234567', 'A01,A02', 200000, 'GIAM20',    20, 40000, 160000, 'paid',    NOW()),
 ('ORD002', 1,  'Trần Thị B',   '0912345678', 'B05',     100000, NULL,         0,     0, 100000, 'paid',    NOW()),
@@ -92,7 +91,7 @@ INSERT INTO PaymentOrders (OrderCode, ScreeningID, CustomerName, CustomerPhone, 
 ('ORD009', 9,  'Ngô Thanh I',  '0989012345', 'B01',     100000, 'WEEKEND25', 25, 25000,  75000, 'paid',    NOW()),
 ('ORD010', 10, 'Đỗ Hoàng J',   '0990123456', 'L04',     100000, NULL,         0,     0, 100000, 'paid',    NOW());
 
--- 8. Tickets (10 Vé - dùng stored procedure để trigger hoạt động)
+-- 8. Tickets (dùng stored procedure để trigger hoạt động)
 CALL sp_book_ticket(1,  1,  'A01');
 CALL sp_book_ticket(1,  1,  'A02');
 CALL sp_book_ticket(2,  1,  'B05');
@@ -105,7 +104,6 @@ CALL sp_book_ticket(9,  9,  'B01');
 CALL sp_book_ticket(10, 10, 'L04');
 
 -- 9. VoucherUsages (5 lần dùng - chỉ dùng OrderCode đã tồn tại trong PaymentOrders)
--- FIX: bỏ ORD011-ORD015 vì không có trong PaymentOrders → lỗi FK
 INSERT INTO VoucherUsages (VoucherID, PhoneNumber, OrderCode) VALUES
 (1, '0901234567', 'ORD001'),
 (2, '0923456789', 'ORD003'),

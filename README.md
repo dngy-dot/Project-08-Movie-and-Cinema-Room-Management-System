@@ -1,4 +1,4 @@
-# Web Dat Ve Xem Phim (Project 08)
+# Project 08: Movie and Cinema Room Management System
 
 - Quan ly phim, phong chieu, suat chieu, khach hang
 - Dat ve va chon ghe
