@@ -3,7 +3,7 @@
 <div class="admin-header">
   <div>
     <h2 class="soft-title">Báo cáo doanh thu theo phim</h2>
-    <div class="admin-muted">Chọn một phim để xem doanh thu theo từng rạp.</div>
+    <div class="admin-muted">Số vé và doanh thu theo từng đơn đã thanh toán (tiền thực thu đã gồm giảm voucher). Chọn phim để xem theo rạp.</div>
   </div>
 </div>
 
@@ -25,7 +25,7 @@
 
 <div class="row mb-3">
   <div class="col-md-4"><div class="card p-3"><strong>Giá vé mặc định:</strong> {{ "{:,.0f}".format(ticket_price) }} VND</div></div>
-  <div class="col-md-4"><div class="card p-3"><strong>Tổng vé (danh sách hiện tại):</strong> {{ total_tickets }}</div></div>
+  <div class="col-md-4"><div class="card p-3"><strong>Tổng vé (đơn đã thanh toán):</strong> {{ total_tickets }}</div></div>
   <div class="col-md-4"><div class="card p-3"><strong>Tổng doanh thu:</strong> {{ "{:,.0f}".format(total_revenue) }} VND</div></div>
 </div>
 

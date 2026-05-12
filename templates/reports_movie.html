@@ -4,13 +4,13 @@
   <div>
     <p class="mb-1"><a href="{{ url_for('reports', q=search_q) if search_q else url_for('reports') }}" class="text-decoration-none">← Quay lại báo cáo theo phim</a></p>
     <h2 class="soft-title">Doanh thu theo rạp — {{ movie.title }}</h2>
-    <div class="admin-muted">Tổng hợp vé đã bán cho phim này tại từng rạp.</div>
+    <div class="admin-muted">Theo đơn đã thanh toán tại từng rạp (doanh thu = tổng tiền thực thu mỗi đơn, đã trừ voucher).</div>
   </div>
 </div>
 
 <div class="row mb-3">
   <div class="col-md-4"><div class="card p-3"><strong>Giá vé mặc định:</strong> {{ "{:,.0f}".format(ticket_price) }} VND</div></div>
-  <div class="col-md-4"><div class="card p-3"><strong>Tổng vé (phim này):</strong> {{ total_tickets }}</div></div>
+  <div class="col-md-4"><div class="card p-3"><strong>Tổng vé (đơn đã thanh toán):</strong> {{ total_tickets }}</div></div>
   <div class="col-md-4"><div class="card p-3"><strong>Tổng doanh thu:</strong> {{ "{:,.0f}".format(total_revenue) }} VND</div></div>
 </div>
 

@@ -11,6 +11,7 @@ from flask import Flask, abort, flash, jsonify, redirect, render_template, reque
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import UniqueConstraint, func, inspect, text
+from sqlalchemy.orm import joinedload
 from werkzeug.security import check_password_hash, generate_password_hash
 import qrcode
 import requests
@@ -211,20 +212,18 @@ class PaymentOrder(db.Model):
 class Voucher(db.Model):
     __tablename__ = "vouchers"
 
-    id = db.Column("ID", db.Integer, primary_key=True)
-    code = db.Column("Code", db.String(30), nullable=False, unique=True, index=True)
-    discount_percent = db.Column("DiscountPercent", db.Integer, nullable=False, default=0)
-    created_at = db.Column("CreatedAt", db.DateTime, nullable=False, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(30), nullable=False, unique=True, index=True)
+    discount_percent = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 
 class VoucherUsage(db.Model):
-    """Bảng `voucher_usages` từ create_all dùng snake_case; bảng `vouchers` theo schema.sql dùng PascalCase."""
-
     __tablename__ = "voucher_usages"
 
     id = db.Column(db.Integer, primary_key=True)
     voucher_id = db.Column(
-        db.Integer, db.ForeignKey("vouchers.ID", ondelete="CASCADE"), nullable=False, index=True
+        db.Integer, db.ForeignKey("vouchers.id", ondelete="CASCADE"), nullable=False, index=True
     )
     phone_number = db.Column(db.String(30), nullable=False, index=True)
     order_code = db.Column(db.String(16), nullable=False, unique=True, index=True)
@@ -434,6 +433,12 @@ def parse_selected_seats(seats_raw: str) -> list[str]:
             seen.add(s)
             unique_items.append(s)
     return unique_items
+
+
+def sql_payment_order_seat_count_expr():
+    """Đếm ghế trên một đơn (seat_numbers giống parse_selected_seats: phân tách bằng dấu phẩy)."""
+    sn = PaymentOrder.seat_numbers
+    return func.length(sn) - func.length(func.replace(sn, ",", "")) + 1
 
 
 def build_payment_qr_base64(order_code: str, amount: int, customer_phone: str) -> str:
@@ -654,27 +659,118 @@ def maybe_auto_confirm_with_sepay(order: PaymentOrder) -> bool:
     return False
 
 
-def _add_datetime_column_not_null(table: str, column: str) -> None:
-    """Thêm cột thời gian NOT NULL tương thích MySQL cũ (DATETIME + DEFAULT CURRENT_TIMESTAMP lỗi trước 5.6.5)."""
-    dialect = db.engine.dialect.name
-    if dialect == "sqlite":
-        db.session.execute(
-            text(
-                f"ALTER TABLE {table} ADD COLUMN {column} DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
-            )
-        )
-    elif dialect in ("mysql", "mariadb"):
-        db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} DATETIME NULL"))
-        db.session.execute(
-            text(f"UPDATE {table} SET {column} = UTC_TIMESTAMP() WHERE {column} IS NULL")
-        )
-        db.session.execute(text(f"ALTER TABLE {table} MODIFY COLUMN {column} DATETIME NOT NULL"))
-    else:
-        db.session.execute(
-            text(
-                f"ALTER TABLE {table} ADD COLUMN {column} TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
-            )
-        )
+def ensure_mysql_flask_table_alignment() -> None:
+    """Sau khi import SQL cũ (PascalCase): MySQL có thể tạo paymentorders, voucherusages…
+    trong khi Flask dùng payment_orders, voucher_usages. db.create_all() tạo thêm bộ bảng đúng tên
+    → trùng logic, tab Voucher lỗi. Dọn bảng legacy rỗng; sửa tên cột CamelCase → snake_case nếu cần."""
+    engine = db.engine
+    if engine.dialect.name != "mysql":
+        return
+
+    def table_names() -> dict[str, str]:
+        insp = inspect(engine)
+        return {t.lower(): t for t in insp.get_table_names()}
+
+    names = table_names()
+    legacy_pairs = (
+        ("paymentorders", "payment_orders"),
+        ("voucherusages", "voucher_usages"),
+        ("invalidatedtickets", "invalidated_tickets"),
+    )
+    with engine.begin() as conn:
+        for legacy_l, canonical_l in legacy_pairs:
+            if legacy_l not in names or canonical_l not in names:
+                continue
+            leg_tab = names[legacy_l]
+            cnt = conn.execute(text(f"SELECT COUNT(*) FROM `{leg_tab}`")).scalar()
+            if int(cnt or 0) == 0:
+                conn.execute(text(f"DROP TABLE `{leg_tab}`"))
+
+    names = table_names()
+
+    def col_lower_map(table: str) -> set[str]:
+        if table not in names:
+            return set()
+        insp = inspect(engine)
+        return {c["name"].lower() for c in insp.get_columns(names[table])}
+
+    # vouchers: dump cũ thường có discountpercent / createdat
+    if "vouchers" in names:
+        vtab = names["vouchers"]
+        cols = col_lower_map("vouchers")
+        with engine.begin() as conn:
+            if "discountpercent" in cols and "discount_percent" not in cols:
+                conn.execute(
+                    text(
+                        f"ALTER TABLE `{vtab}` CHANGE COLUMN discountpercent "
+                        f"discount_percent INT NOT NULL"
+                    )
+                )
+            if "createdat" in cols and "created_at" not in cols:
+                conn.execute(
+                    text(
+                        f"ALTER TABLE `{vtab}` CHANGE COLUMN createdat "
+                        f"created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+                    )
+                )
+
+    if "voucher_usages" in names:
+        utab = names["voucher_usages"]
+        cols = col_lower_map("voucher_usages")
+        with engine.begin() as conn:
+            if "voucherid" in cols and "voucher_id" not in cols:
+                conn.execute(
+                    text(
+                        f"ALTER TABLE `{utab}` CHANGE COLUMN voucherid "
+                        f"voucher_id INT NOT NULL"
+                    )
+                )
+            if "phonenumber" in cols and "phone_number" not in cols:
+                conn.execute(
+                    text(
+                        f"ALTER TABLE `{utab}` CHANGE COLUMN phonenumber "
+                        f"phone_number VARCHAR(30) NOT NULL"
+                    )
+                )
+            if "ordercode" in cols and "order_code" not in cols:
+                conn.execute(
+                    text(
+                        f"ALTER TABLE `{utab}` CHANGE COLUMN ordercode "
+                        f"order_code VARCHAR(16) NOT NULL"
+                    )
+                )
+            if "usedat" in cols and "used_at" not in cols:
+                conn.execute(
+                    text(
+                        f"ALTER TABLE `{utab}` CHANGE COLUMN usedat "
+                        f"used_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+                    )
+                )
+
+    if "payment_orders" in names:
+        ptab = names["payment_orders"]
+        changes = [
+            ("ordercode", "order_code", "VARCHAR(16) NOT NULL"),
+            ("screeningid", "screening_id", "INT NOT NULL"),
+            ("customername", "customer_name", "VARCHAR(150) NOT NULL"),
+            ("customerphone", "customer_phone", "VARCHAR(30) NOT NULL"),
+            ("seatnumbers", "seat_numbers", "VARCHAR(300) NOT NULL"),
+            ("originalamount", "original_amount", "INT NOT NULL DEFAULT 0"),
+            ("vouchercode", "voucher_code", "VARCHAR(30) NULL"),
+            ("discountpercent", "discount_percent", "INT NOT NULL DEFAULT 0"),
+            ("discountamount", "discount_amount", "INT NOT NULL DEFAULT 0"),
+            ("totalamount", "total_amount", "INT NOT NULL"),
+            ("paidat", "paid_at", "DATETIME NULL"),
+            ("createdat", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"),
+        ]
+        for old_l, new_name, ddl in changes:
+            cols = col_lower_map("payment_orders")
+            if old_l not in cols or new_name in cols:
+                continue
+            with engine.begin() as conn:
+                conn.execute(
+                    text(f"ALTER TABLE `{ptab}` CHANGE COLUMN {old_l} {new_name} {ddl}")
+                )
 
 
 def ensure_voucher_schema() -> None:
@@ -688,8 +784,7 @@ def ensure_voucher_schema() -> None:
         db.session.commit()
     else:
         col_names = {c["name"].lower() for c in insp.get_columns(vtab)}
-        has_discount = "discount_percent" in col_names or "discountpercent" in col_names
-        if not has_discount:
+        if "discount_percent" not in col_names:
             db.session.execute(
                 text(
                     f"ALTER TABLE {vtab} ADD COLUMN discount_percent INTEGER NOT NULL DEFAULT 0"
@@ -697,10 +792,12 @@ def ensure_voucher_schema() -> None:
             )
             db.session.commit()
         col_names = {c["name"].lower() for c in inspect(engine).get_columns(vtab)}
-        has_created = "created_at" in col_names or "createdat" in col_names
-        if not has_created:
-            pascal_vouchers = "discountpercent" in col_names
-            _add_datetime_column_not_null(vtab, "CreatedAt" if pascal_vouchers else "created_at")
+        if "created_at" not in col_names:
+            db.session.execute(
+                text(
+                    f"ALTER TABLE {vtab} ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+                )
+            )
             db.session.commit()
 
     insp = inspect(engine)
@@ -709,10 +806,12 @@ def ensure_voucher_schema() -> None:
         db.session.commit()
     else:
         ucols = {c["name"].lower() for c in insp.get_columns(utab)}
-        has_used = "used_at" in ucols or "usedat" in ucols
-        if not has_used:
-            pascal_usages = "voucherid" in ucols or "phonenumber" in ucols
-            _add_datetime_column_not_null(utab, "UsedAt" if pascal_usages else "used_at")
+        if "used_at" not in ucols:
+            db.session.execute(
+                text(
+                    f"ALTER TABLE {utab} ADD COLUMN used_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+                )
+            )
             db.session.commit()
 
 
@@ -837,6 +936,7 @@ def run_schema_check_once() -> None:
     global SCHEMA_CHECKED
     if not SCHEMA_CHECKED:
         db.create_all()
+        ensure_mysql_flask_table_alignment()
         ensure_voucher_schema()
         ensure_compat_schema()
         SCHEMA_CHECKED = True
@@ -1029,8 +1129,14 @@ def movies_coming_soon():
 def movie_detail(movie_id: int):
     movie = Movie.query.get_or_404(movie_id)
     today = datetime.today().date()
+    # Chi lay suat co phong + rap hop le (tranh sc.room None khi room_id loi / du lieu cu)
     screenings = (
-        Screening.query.filter(
+        Screening.query.options(
+            joinedload(Screening.room).joinedload(CinemaRoom.cinema)
+        )
+        .join(CinemaRoom, Screening.room_id == CinemaRoom.id)
+        .join(Cinema, CinemaRoom.cinema_id == Cinema.id)
+        .filter(
             Screening.movie_id == movie_id,
             Screening.screening_date >= today,
         )
@@ -1052,6 +1158,8 @@ def movie_detail(movie_id: int):
     available_cinemas = []
     seen_cinema_ids = set()
     for sc in screenings_by_date:
+        if sc.room is None or sc.room.cinema is None:
+            continue
         cid = sc.room.cinema_id
         if cid not in seen_cinema_ids:
             seen_cinema_ids.add(cid)
@@ -1072,7 +1180,8 @@ def movie_detail(movie_id: int):
     filtered_screenings = [
         sc
         for sc in screenings_by_date
-        if selected_cinema_id is None or sc.room.cinema_id == selected_cinema_id
+        if sc.room is not None
+        and (selected_cinema_id is None or sc.room.cinema_id == selected_cinema_id)
     ]
     return render_template(
         "movie_detail.html",
@@ -2025,46 +2134,40 @@ def reports():
     q = (request.args.get("q") or "").strip()
     ticket_price = get_ticket_price()
 
-    # Vé: đếm từ bảng tickets. Doanh thu: tổng tiền đơn đã thanh toán (đã trừ voucher).
-    sold_subq = (
+    # Báo cáo theo đơn đã thanh toán: doanh thu = sum(total_amount), vé/ghế = tổng ghế trên các đơn đó.
+    seat_n = sql_payment_order_seat_count_expr()
+    po_by_movie_sq = (
         db.session.query(
             Screening.movie_id.label("movie_id"),
-            func.count(Ticket.id).label("sold"),
-        )
-        .select_from(Screening)
-        .join(Ticket, Ticket.screening_id == Screening.id)
-        .group_by(Screening.movie_id)
-        .subquery()
-    )
-    rev_subq = (
-        db.session.query(
-            Screening.movie_id.label("movie_id"),
+            func.sum(seat_n).label("sold"),
             func.sum(PaymentOrder.total_amount).label("revenue"),
         )
-        .select_from(Screening)
-        .join(PaymentOrder, PaymentOrder.screening_id == Screening.id)
+        .select_from(PaymentOrder)
+        .join(Screening, PaymentOrder.screening_id == Screening.id)
         .filter(PaymentOrder.status == "paid")
         .group_by(Screening.movie_id)
         .subquery()
     )
-    movie_ids_sq = db.session.query(Screening.movie_id.label("movie_id")).distinct().subquery()
 
     movie_rows = (
         db.session.query(
             Movie.id,
             Movie.title,
-            func.coalesce(sold_subq.c.sold, 0).label("sold"),
-            func.coalesce(rev_subq.c.revenue, 0).label("revenue"),
+            func.coalesce(po_by_movie_sq.c.sold, 0).label("sold"),
+            func.coalesce(po_by_movie_sq.c.revenue, 0).label("revenue"),
         )
         .select_from(Movie)
-        .join(movie_ids_sq, movie_ids_sq.c.movie_id == Movie.id)
-        .outerjoin(sold_subq, sold_subq.c.movie_id == Movie.id)
-        .outerjoin(rev_subq, rev_subq.c.movie_id == Movie.id)
+        .join(po_by_movie_sq, po_by_movie_sq.c.movie_id == Movie.id)
     )
     if q:
         safe = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         movie_rows = movie_rows.filter(Movie.title.like(f"%{safe}%", escape="\\"))
     movie_rows = movie_rows.order_by(Movie.title.asc()).all()
+    movie_rows = [
+        r
+        for r in movie_rows
+        if int(r.sold or 0) > 0 or float(r.revenue or 0) > 0
+    ]
 
     total_tickets = sum(int(row.sold or 0) for row in movie_rows)
     total_revenue = sum(int(row.revenue or 0) for row in movie_rows)
@@ -2088,36 +2191,19 @@ def reports_movie(movie_id: int):
     q_back = (request.args.get("q") or "").strip()
     ticket_price = get_ticket_price()
 
-    sold_cinema_sq = (
+    seat_n = sql_payment_order_seat_count_expr()
+    po_by_cinema_sq = (
         db.session.query(
             CinemaRoom.cinema_id.label("cinema_id"),
-            func.count(Ticket.id).label("sold"),
-        )
-        .select_from(Screening)
-        .join(CinemaRoom, Screening.room_id == CinemaRoom.id)
-        .join(Ticket, Ticket.screening_id == Screening.id)
-        .filter(Screening.movie_id == movie_id)
-        .group_by(CinemaRoom.cinema_id)
-        .subquery()
-    )
-    rev_cinema_sq = (
-        db.session.query(
-            CinemaRoom.cinema_id.label("cinema_id"),
+            func.sum(seat_n).label("sold"),
             func.sum(PaymentOrder.total_amount).label("revenue"),
         )
-        .select_from(Screening)
+        .select_from(PaymentOrder)
+        .join(Screening, PaymentOrder.screening_id == Screening.id)
         .join(CinemaRoom, Screening.room_id == CinemaRoom.id)
-        .join(PaymentOrder, PaymentOrder.screening_id == Screening.id)
+        .join(Cinema, CinemaRoom.cinema_id == Cinema.id)
         .filter(Screening.movie_id == movie_id, PaymentOrder.status == "paid")
         .group_by(CinemaRoom.cinema_id)
-        .subquery()
-    )
-    cinema_ids_sq = (
-        db.session.query(CinemaRoom.cinema_id.label("cinema_id"))
-        .select_from(Screening)
-        .join(CinemaRoom, Screening.room_id == CinemaRoom.id)
-        .filter(Screening.movie_id == movie_id)
-        .distinct()
         .subquery()
     )
 
@@ -2125,13 +2211,11 @@ def reports_movie(movie_id: int):
         db.session.query(
             Cinema.id,
             Cinema.cinema_name,
-            func.coalesce(sold_cinema_sq.c.sold, 0).label("sold"),
-            func.coalesce(rev_cinema_sq.c.revenue, 0).label("revenue"),
+            func.coalesce(po_by_cinema_sq.c.sold, 0).label("sold"),
+            func.coalesce(po_by_cinema_sq.c.revenue, 0).label("revenue"),
         )
         .select_from(Cinema)
-        .join(cinema_ids_sq, cinema_ids_sq.c.cinema_id == Cinema.id)
-        .outerjoin(sold_cinema_sq, sold_cinema_sq.c.cinema_id == Cinema.id)
-        .outerjoin(rev_cinema_sq, rev_cinema_sq.c.cinema_id == Cinema.id)
+        .join(po_by_cinema_sq, po_by_cinema_sq.c.cinema_id == Cinema.id)
         .order_by(Cinema.cinema_name.asc())
         .all()
     )
@@ -2303,14 +2387,22 @@ def import_cgv_html():
         return len(entries), added, updated
 
     env_path = (os.getenv("CGV_HTML_PATH") or "").strip()
-    html_candidates = [Path(env_path)] if env_path else []
+    root = Path(__file__).resolve().parent
+    html_candidates: list[Path] = []
+    if env_path:
+        html_candidates.append(Path(env_path))
     html_candidates += [
-        Path("data/cgv_now_showing.html"),
-        Path("New Text Document.txt"),
+        root / "data" / "cgv_now_showing.html",
+        root / "phimdangchieu.txt",
+        root / "phimsapchieu.txt",
+        root / "New Text Document.txt",
     ]
     html_path = next((p for p in html_candidates if p and p.exists()), None)
     if html_path is None:
-        print("Khong tim thay file HTML. Hay luu vao data/cgv_now_showing.html hoac New Text Document.txt")
+        print(
+            "Khong tim thay file HTML. Dat phimdangchieu.txt / phimsapchieu.txt cung thu muc app.py, "
+            "hoac set bien moi truong CGV_HTML_PATH, hoac data/cgv_now_showing.html."
+        )
         return
 
     blocks, added, updated = import_from_html_file(html_path)
@@ -2387,8 +2479,4 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         _auto_import_when_empty()
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-        debug=False,
-    )
+    app.run(debug=True)

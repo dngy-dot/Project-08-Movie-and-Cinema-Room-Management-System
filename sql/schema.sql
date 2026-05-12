@@ -1,24 +1,47 @@
+-- cinema_db: tên bảng/cột khớp Flask-SQLAlchemy (app.py).
+-- Tránh import file cũ tạo paymentorders / voucherusages — Flask tạo thêm payment_orders / voucher_usages → trùng bảng, tab Voucher lỗi.
+
 CREATE DATABASE IF NOT EXISTS cinema_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE cinema_db;
 
--- Tắt kiểm tra FK tạm thời để DROP an toàn
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP VIEW IF EXISTS vw_daily_screenings;
+DROP VIEW IF EXISTS vw_available_seats;
+DROP TRIGGER IF EXISTS trg_validate_ticket;
+DROP PROCEDURE IF EXISTS sp_book_ticket;
+DROP FUNCTION IF EXISTS fn_occupancy_rate;
+DROP FUNCTION IF EXISTS fn_total_revenue;
+
+DROP TABLE IF EXISTS voucher_usages;
+DROP TABLE IF EXISTS voucherusages;
 DROP TABLE IF EXISTS VoucherUsages;
+DROP TABLE IF EXISTS vouchers;
 DROP TABLE IF EXISTS Vouchers;
+DROP TABLE IF EXISTS invalidated_tickets;
+DROP TABLE IF EXISTS invalidatedtickets;
 DROP TABLE IF EXISTS InvalidatedTickets;
-DROP TABLE IF EXISTS Tickets;
+DROP TABLE IF EXISTS payment_orders;
+DROP TABLE IF EXISTS paymentorders;
 DROP TABLE IF EXISTS PaymentOrders;
+DROP TABLE IF EXISTS tickets;
+DROP TABLE IF EXISTS Tickets;
+DROP TABLE IF EXISTS screenings;
 DROP TABLE IF EXISTS Screenings;
+DROP TABLE IF EXISTS members;
+DROP TABLE IF EXISTS app_settings;
+DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS Customers;
+DROP TABLE IF EXISTS cinemarooms;
 DROP TABLE IF EXISTS CinemaRooms;
+DROP TABLE IF EXISTS cinemas;
 DROP TABLE IF EXISTS Cinemas;
+DROP TABLE IF EXISTS movies;
 DROP TABLE IF EXISTS Movies;
 
--- Bật lại kiểm tra FK
 SET FOREIGN_KEY_CHECKS = 1;
 
-CREATE TABLE Movies (
+CREATE TABLE movies (
   MovieID INT AUTO_INCREMENT PRIMARY KEY,
   MovieTitle VARCHAR(255) NOT NULL,
   Genre VARCHAR(100) NOT NULL,
@@ -27,100 +50,120 @@ CREATE TABLE Movies (
   ReleaseStatus VARCHAR(20) NOT NULL DEFAULT 'now_showing'
 );
 
-CREATE TABLE Cinemas (
+CREATE TABLE cinemas (
   CinemaID INT AUTO_INCREMENT PRIMARY KEY,
   CinemaName VARCHAR(150) NOT NULL UNIQUE,
   Address VARCHAR(255) NULL
 );
 
-CREATE TABLE CinemaRooms (
+CREATE TABLE cinemarooms (
   RoomID INT AUTO_INCREMENT PRIMARY KEY,
   CinemaID INT NOT NULL,
   RoomName VARCHAR(100) NOT NULL UNIQUE,
   Capacity INT NOT NULL CHECK (Capacity > 0),
-  FOREIGN KEY (CinemaID) REFERENCES Cinemas(CinemaID)
+  FOREIGN KEY (CinemaID) REFERENCES cinemas(CinemaID)
 );
 
-CREATE TABLE Screenings (
+CREATE TABLE screenings (
   ScreeningID INT AUTO_INCREMENT PRIMARY KEY,
   MovieID INT NOT NULL,
   RoomID INT NOT NULL,
   ScreeningDate DATE NOT NULL,
   ScreeningTime TIME NOT NULL,
-  FOREIGN KEY (MovieID) REFERENCES Movies(MovieID),
-  FOREIGN KEY (RoomID) REFERENCES CinemaRooms(RoomID)
+  FOREIGN KEY (MovieID) REFERENCES movies(MovieID),
+  FOREIGN KEY (RoomID) REFERENCES cinemarooms(RoomID)
 );
 
-CREATE TABLE Customers (
+CREATE TABLE customers (
   CustomerID INT AUTO_INCREMENT PRIMARY KEY,
   CustomerName VARCHAR(150) NOT NULL,
   PhoneNumber VARCHAR(30) NOT NULL UNIQUE
 );
 
-CREATE TABLE Tickets (
+CREATE TABLE members (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  phone VARCHAR(30) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX ix_members_phone (phone)
+);
+
+CREATE TABLE app_settings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  `key` VARCHAR(100) NOT NULL UNIQUE,
+  value TEXT NULL
+);
+
+CREATE TABLE tickets (
   TicketID INT AUTO_INCREMENT PRIMARY KEY,
   CustomerID INT NOT NULL,
   ScreeningID INT NOT NULL,
   SeatNumber VARCHAR(10) NOT NULL,
   BookingCode VARCHAR(12) NOT NULL UNIQUE,
   booked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID),
-  FOREIGN KEY (ScreeningID) REFERENCES Screenings(ScreeningID),
+  FOREIGN KEY (CustomerID) REFERENCES customers(CustomerID),
+  FOREIGN KEY (ScreeningID) REFERENCES screenings(ScreeningID),
   CONSTRAINT uq_screening_seat UNIQUE (ScreeningID, SeatNumber)
 );
 
-CREATE TABLE PaymentOrders (
-  ID INT AUTO_INCREMENT PRIMARY KEY,
-  OrderCode VARCHAR(16) NOT NULL UNIQUE,
-  ScreeningID INT NOT NULL,
-  CustomerName VARCHAR(150) NOT NULL,
-  CustomerPhone VARCHAR(30) NOT NULL,
-  SeatNumbers VARCHAR(300) NOT NULL,
-  OriginalAmount INT NOT NULL DEFAULT 0,
-  VoucherCode VARCHAR(30) NULL,
-  DiscountPercent INT NOT NULL DEFAULT 0,
-  DiscountAmount INT NOT NULL DEFAULT 0,
-  TotalAmount INT NOT NULL,
-  Status VARCHAR(20) NOT NULL DEFAULT 'pending',
-  PaidAt DATETIME NULL,
-  CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (ScreeningID) REFERENCES Screenings(ScreeningID)
+CREATE TABLE payment_orders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  order_code VARCHAR(16) NOT NULL UNIQUE,
+  screening_id INT NOT NULL,
+  customer_name VARCHAR(150) NOT NULL,
+  customer_phone VARCHAR(30) NOT NULL,
+  seat_numbers VARCHAR(300) NOT NULL,
+  original_amount INT NOT NULL DEFAULT 0,
+  voucher_code VARCHAR(30) NULL,
+  discount_percent INT NOT NULL DEFAULT 0,
+  discount_amount INT NOT NULL DEFAULT 0,
+  total_amount INT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  paid_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (screening_id) REFERENCES screenings(ScreeningID),
+  INDEX ix_payment_orders_screening_id (screening_id),
+  INDEX ix_payment_orders_status (status),
+  INDEX ix_payment_orders_customer_phone (customer_phone)
 );
 
-CREATE TABLE Vouchers (
-  ID INT AUTO_INCREMENT PRIMARY KEY,
-  Code VARCHAR(30) NOT NULL UNIQUE,
-  DiscountPercent INT NOT NULL CHECK (DiscountPercent BETWEEN 1 AND 100),
-  CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE vouchers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(30) NOT NULL UNIQUE,
+  discount_percent INT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE VoucherUsages (
-  ID INT AUTO_INCREMENT PRIMARY KEY,
-  VoucherID INT NOT NULL,
-  PhoneNumber VARCHAR(30) NOT NULL,
-  OrderCode VARCHAR(16) NOT NULL UNIQUE,
-  UsedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (VoucherID) REFERENCES Vouchers(ID) ON DELETE CASCADE,
-  CONSTRAINT uq_voucher_phone UNIQUE (VoucherID, PhoneNumber)
+CREATE TABLE voucher_usages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  voucher_id INT NOT NULL,
+  phone_number VARCHAR(30) NOT NULL,
+  order_code VARCHAR(16) NOT NULL UNIQUE,
+  used_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (voucher_id) REFERENCES vouchers(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_voucher_phone (voucher_id, phone_number)
 );
 
-CREATE TABLE InvalidatedTickets (
-  ID INT AUTO_INCREMENT PRIMARY KEY,
-  CustomerName VARCHAR(150) NOT NULL,
-  CustomerPhone VARCHAR(30) NOT NULL,
-  BookingCode VARCHAR(12) NOT NULL UNIQUE,
-  MovieTitle VARCHAR(255) NOT NULL,
-  RoomName VARCHAR(100) NOT NULL,
-  ScreeningDate DATE NOT NULL,
-  ScreeningTime TIME NOT NULL,
-  SeatNumber VARCHAR(10) NOT NULL,
-  BookedAt DATETIME NOT NULL,
-  Reason VARCHAR(255) NOT NULL DEFAULT 'Vé không còn khả dụng',
-  InvalidatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE invalidated_tickets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  customer_name VARCHAR(150) NOT NULL,
+  customer_phone VARCHAR(30) NOT NULL,
+  booking_code VARCHAR(12) NOT NULL UNIQUE,
+  movie_title VARCHAR(255) NOT NULL,
+  room_name VARCHAR(100) NOT NULL,
+  screening_date DATE NOT NULL,
+  screening_time TIME NOT NULL,
+  seat_number VARCHAR(10) NOT NULL,
+  booked_at DATETIME NOT NULL,
+  reason VARCHAR(255) NOT NULL DEFAULT 'Vé không còn khả dụng',
+  invalidated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX ix_invalidated_tickets_customer_phone (customer_phone),
+  INDEX ix_invalidated_tickets_booking_code (booking_code)
 );
 
-CREATE INDEX idx_movies_title ON Movies(MovieTitle);
-CREATE INDEX idx_screenings_datetime ON Screenings(ScreeningDate, ScreeningTime);
+CREATE INDEX idx_movies_title ON movies(MovieTitle);
+CREATE INDEX idx_screenings_datetime ON screenings(ScreeningDate, ScreeningTime);
 
 DROP VIEW IF EXISTS vw_daily_screenings;
 CREATE VIEW vw_daily_screenings AS
@@ -130,10 +173,10 @@ SELECT
   ci.CinemaName,
   m.MovieTitle,
   c.RoomName
-FROM Screenings s
-JOIN Movies m ON s.MovieID = m.MovieID
-JOIN CinemaRooms c ON s.RoomID = c.RoomID
-JOIN Cinemas ci ON c.CinemaID = ci.CinemaID;
+FROM screenings s
+JOIN movies m ON s.MovieID = m.MovieID
+JOIN cinemarooms c ON s.RoomID = c.RoomID
+JOIN cinemas ci ON c.CinemaID = ci.CinemaID;
 
 DROP VIEW IF EXISTS vw_available_seats;
 CREATE VIEW vw_available_seats AS
@@ -143,9 +186,9 @@ SELECT
   c.Capacity,
   COUNT(t.TicketID) AS SoldSeats,
   (c.Capacity - COUNT(t.TicketID)) AS AvailableSeats
-FROM Screenings s
-JOIN CinemaRooms c ON s.RoomID = c.RoomID
-LEFT JOIN Tickets t ON t.ScreeningID = s.ScreeningID
+FROM screenings s
+JOIN cinemarooms c ON s.RoomID = c.RoomID
+LEFT JOIN tickets t ON t.ScreeningID = s.ScreeningID
 GROUP BY s.ScreeningID, c.RoomName, c.Capacity;
 
 DROP FUNCTION IF EXISTS fn_occupancy_rate;
@@ -159,12 +202,12 @@ BEGIN
   DECLARE v_rate DECIMAL(5,2);
 
   SELECT c.Capacity INTO v_capacity
-  FROM Screenings s
-  JOIN CinemaRooms c ON s.RoomID = c.RoomID
+  FROM screenings s
+  JOIN cinemarooms c ON s.RoomID = c.RoomID
   WHERE s.ScreeningID = p_screening_id;
 
   SELECT COUNT(*) INTO v_sold
-  FROM Tickets
+  FROM tickets
   WHERE ScreeningID = p_screening_id;
 
   IF v_capacity IS NULL OR v_capacity = 0 THEN
@@ -187,7 +230,7 @@ BEGIN
   DECLARE v_exists INT DEFAULT 0;
 
   SELECT COUNT(*) INTO v_exists
-  FROM Tickets
+  FROM tickets
   WHERE ScreeningID = p_screening_id
     AND SeatNumber = p_seat_number;
 
@@ -195,8 +238,14 @@ BEGIN
     SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT = 'Seat already booked for this screening';
   ELSE
-    INSERT INTO Tickets(CustomerID, ScreeningID, SeatNumber)
-    VALUES (p_customer_id, p_screening_id, p_seat_number);
+    INSERT INTO tickets(CustomerID, ScreeningID, SeatNumber, BookingCode, booked_at)
+    VALUES (
+      p_customer_id,
+      p_screening_id,
+      p_seat_number,
+      CONCAT('BK', UPPER(SUBSTRING(REPLACE(UUID(), '-', ''), 1, 10))),
+      NOW()
+    );
   END IF;
 END //
 DELIMITER ;
@@ -204,12 +253,12 @@ DELIMITER ;
 DROP TRIGGER IF EXISTS trg_validate_ticket;
 DELIMITER //
 CREATE TRIGGER trg_validate_ticket
-BEFORE INSERT ON Tickets
+BEFORE INSERT ON tickets
 FOR EACH ROW
 BEGIN
   DECLARE v_exists INT DEFAULT 0;
   SELECT COUNT(*) INTO v_exists
-  FROM Tickets
+  FROM tickets
   WHERE ScreeningID = NEW.ScreeningID
     AND SeatNumber = NEW.SeatNumber;
 
@@ -231,7 +280,7 @@ BEGIN
   DECLARE v_price        INT DEFAULT 90000;
 
   SELECT COUNT(*) INTO v_ticket_count
-  FROM Tickets
+  FROM tickets
   WHERE ScreeningID = p_screening_id;
 
   RETURN v_ticket_count * v_price;
@@ -242,17 +291,15 @@ DELIMITER ;
 -- Phân quyền user (đề yêu cầu roles: admin, ticket_clerk)
 -- ---------------------------------------------------------------
 
--- Admin: toàn quyền
 CREATE USER IF NOT EXISTS 'cinema_admin'@'localhost' IDENTIFIED BY 'Admin@123';
 GRANT ALL PRIVILEGES ON cinema_db.* TO 'cinema_admin'@'localhost';
 
--- Ticket clerk: chỉ được xem và đặt vé
 CREATE USER IF NOT EXISTS 'ticket_clerk'@'localhost' IDENTIFIED BY 'Clerk@123';
-GRANT SELECT ON cinema_db.Movies      TO 'ticket_clerk'@'localhost';
-GRANT SELECT ON cinema_db.Cinemas     TO 'ticket_clerk'@'localhost';
-GRANT SELECT ON cinema_db.CinemaRooms TO 'ticket_clerk'@'localhost';
-GRANT SELECT ON cinema_db.Screenings  TO 'ticket_clerk'@'localhost';
-GRANT SELECT, INSERT ON cinema_db.Customers TO 'ticket_clerk'@'localhost';
-GRANT SELECT, INSERT ON cinema_db.Tickets   TO 'ticket_clerk'@'localhost';
+GRANT SELECT ON cinema_db.movies TO 'ticket_clerk'@'localhost';
+GRANT SELECT ON cinema_db.cinemas TO 'ticket_clerk'@'localhost';
+GRANT SELECT ON cinema_db.cinemarooms TO 'ticket_clerk'@'localhost';
+GRANT SELECT ON cinema_db.screenings TO 'ticket_clerk'@'localhost';
+GRANT SELECT, INSERT ON cinema_db.customers TO 'ticket_clerk'@'localhost';
+GRANT SELECT, INSERT ON cinema_db.tickets TO 'ticket_clerk'@'localhost';
 
 FLUSH PRIVILEGES;
