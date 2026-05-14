@@ -8,7 +8,8 @@
 
 [![Watch the demo](https://img.shields.io/badge/YouTube-Demo%20Video-red?logo=youtube)](YOUR_YOUTUBE_LINK_HERE)
 
-View the full project representation video at: [YouTube Link]([YOUR_YOUTUBE_LINK_HERE](https://youtu.be/U3AR-BR3WGs))
+View the full project representation video at: [Youtube Presentation Video](https://youtu.be/U3AR-BR3WGs)
+
 
 ## Tech Stack
 
