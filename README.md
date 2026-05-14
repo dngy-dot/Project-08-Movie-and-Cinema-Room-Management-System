@@ -25,10 +25,11 @@ View the full project representation video at: [YouTube Link](YOUR_YOUTUBE_LINK_
 ## Project Structure
 
 ```
-nmo-cinemas/
+Project-08-Movie-and-Cinema-Room-Management-System/
 ├── sql/
 │   ├── schema.sql          # Tables, views, indexes, SP, UDFs, trigger, user grants
-│   └── sample_data.sql     # Seed data for all 12 tables
+│   └── sample_data.sql     # Seed data for all 12 tables          # Tables, views, indexes, SP, UDFs, trigger, user grants
+│   └── ERDiagram.png   
 ├── static/
 │   └── style.css
 ├── templates/              # Jinja2 HTML templates (public + admin)
@@ -45,8 +46,8 @@ nmo-cinemas/
 ### 1. Clone
 
 ```bash
-git clone https://github.com/your-username/nmo-cinemas.git
-cd nmo-cinemas
+git clone https://github.com/dngy-dot/Project-08-Movie-and-Cinema-Room-Management-System.git
+cd Project-08-Movie-and-Cinema-Room-Management-System
 ```
 
 ### 2. Set up database
