@@ -63,10 +63,8 @@ def admin_logout():
     flash("Đã đăng xuất khỏi trang quản trị.", "success")
     return redirect(url_for("index"))
 # ────────────────────────────────────────────────────────────
-
 DEFAULT_TICKET_PRICE = 90000
 SCHEMA_CHECKED = False
-
 
 class Cinema(db.Model):
     __tablename__ = "cinemas"
@@ -941,84 +939,6 @@ def run_schema_check_once() -> None:
         ensure_compat_schema()
         SCHEMA_CHECKED = True
 
-
-def seed_sample_data() -> None:
-    cinemas = [
-        Cinema(cinema_name="NMO Quận 1", address="22 Lê Lợi, Quận 1"),
-        Cinema(cinema_name="NMO Thủ Đức", address="12 Võ Văn Ngân, Thủ Đức"),
-    ]
-    movies = [
-        Movie(title="Inside Out 2", genre="Animation", duration_minutes=96, release_status="now_showing"),
-        Movie(title="The Batman", genre="Action", duration_minutes=176, release_status="now_showing"),
-        Movie(title="Dune: Part Two", genre="Sci-Fi", duration_minutes=166, release_status="coming_soon"),
-        Movie(title="Project Hail Mary", genre="Sci-Fi", duration_minutes=157, release_status="coming_soon"),
-        Movie(title="Super Mario Galaxy", genre="Animation", duration_minutes=99, release_status="now_showing"),
-    ]
-    customers = [
-        Customer(name="Nguyen Van An", phone="0901000001"),
-        Customer(name="Tran Thi Binh", phone="0901000002"),
-        Customer(name="Le Quang Cuong", phone="0901000003"),
-        Customer(name="Pham Thu Dung", phone="0901000004"),
-        Customer(name="Hoang Minh Em", phone="0901000005"),
-    ]
-
-    db.session.add_all(cinemas + movies + customers)
-    db.session.commit()
-    rooms = [
-        CinemaRoom(cinema_id=cinemas[0].id, room_name="Room A", capacity=50),
-        CinemaRoom(cinema_id=cinemas[0].id, room_name="Room B", capacity=40),
-        CinemaRoom(cinema_id=cinemas[1].id, room_name="Room C", capacity=60),
-    ]
-    db.session.add_all(rooms)
-    db.session.commit()
-
-    screenings = [
-        Screening(
-            movie_id=movies[0].id,
-            room_id=rooms[0].id,
-            screening_date=date.today() + timedelta(days=1),
-            screening_time=time(9, 0),
-        ),
-        Screening(
-            movie_id=movies[1].id,
-            room_id=rooms[1].id,
-            screening_date=date.today() + timedelta(days=1),
-            screening_time=time(14, 30),
-        ),
-        Screening(
-            movie_id=movies[2].id,
-            room_id=rooms[2].id,
-            screening_date=date.today() + timedelta(days=2),
-            screening_time=time(19, 0),
-        ),
-        Screening(
-            movie_id=movies[3].id,
-            room_id=rooms[0].id,
-            screening_date=date.today() + timedelta(days=2),
-            screening_time=time(16, 0),
-        ),
-        Screening(
-            movie_id=movies[4].id,
-            room_id=rooms[1].id,
-            screening_date=date.today() + timedelta(days=3),
-            screening_time=time(20, 15),
-        ),
-    ]
-    db.session.add_all(screenings)
-    db.session.commit()
-
-    tickets = [
-        Ticket(customer_id=customers[0].id, screening_id=screenings[0].id, seat_number="A1", booking_code=generate_booking_code()),
-        Ticket(customer_id=customers[1].id, screening_id=screenings[0].id, seat_number="A2", booking_code=generate_booking_code()),
-        Ticket(customer_id=customers[2].id, screening_id=screenings[1].id, seat_number="B1", booking_code=generate_booking_code()),
-        Ticket(customer_id=customers[3].id, screening_id=screenings[2].id, seat_number="C1", booking_code=generate_booking_code()),
-        Ticket(customer_id=customers[4].id, screening_id=screenings[3].id, seat_number="A3", booking_code=generate_booking_code()),
-        Ticket(customer_id=customers[0].id, screening_id=screenings[4].id, seat_number="D2", booking_code=generate_booking_code()),
-    ]
-    db.session.add_all(tickets)
-    db.session.commit()
-
-
 def _movie_lists_for_public_site() -> tuple[list[Movie], list[Movie]]:
     today = datetime.today().date()
     upcoming_boundary = today + timedelta(days=7)
@@ -1069,7 +989,6 @@ def _earliest_screening_date_by_movie(movie_ids: list[int]) -> dict[int, date]:
         .all()
     )
     return {int(mid): d for mid, d in rows}
-
 
 @app.route("/")
 def index():
@@ -2265,7 +2184,6 @@ def init_db():
 def seed_db():
     db.drop_all()
     db.create_all()
-    seed_sample_data()
     print("Database da duoc seed du lieu mau.")
 
 
